@@ -4,7 +4,8 @@ import {
   motion, 
   useMotionValue, 
   useMotionTemplate, 
-  useAnimationFrame 
+  useAnimationFrame,
+  useReducedMotion
 } from "framer-motion";
 
 interface HeroGridProps {
@@ -28,7 +29,10 @@ export const HeroGrid: React.FC<HeroGridProps> = ({ onVerifyClick }) => {
   const speedX = 0.3; 
   const speedY = 0.3;
 
+  const prefersReducedMotion = useReducedMotion();
+
   useAnimationFrame(() => {
+    if (prefersReducedMotion) return;
     const currentX = gridOffsetX.get();
     const currentY = gridOffsetY.get();
     gridOffsetX.set((currentX + speedX) % 40);
@@ -108,7 +112,7 @@ export const HeroGrid: React.FC<HeroGridProps> = ({ onVerifyClick }) => {
             ✓ Instant Analysis
           </div>
           <div className="text-sm text-slate-600 bg-slate-50 px-4 py-2 rounded-full border border-slate-200">
-            ✓ Secure Platform
+            ✓ Uploads Not Stored
           </div>
           <div className="text-sm text-slate-600 bg-slate-50 px-4 py-2 rounded-full border border-slate-200">
             ✓ AI-Powered
@@ -130,7 +134,7 @@ export const HeroGrid: React.FC<HeroGridProps> = ({ onVerifyClick }) => {
           </button>
           
           <a
-            href="#about"
+            href="#how-it-works"
             className="px-8 py-4 bg-white text-slate-700 font-semibold rounded-lg hover:bg-slate-50 transition-all border border-slate-300 active:scale-95"
           >
             Learn More
@@ -145,16 +149,16 @@ export const HeroGrid: React.FC<HeroGridProps> = ({ onVerifyClick }) => {
           className="flex flex-wrap gap-12 justify-center text-sm pt-8 text-slate-500"
         >
           <div className="flex flex-col items-center gap-1">
-            <div className="text-3xl font-bold text-slate-900">90%</div>
-            <div>Accuracy</div>
+            <div className="text-3xl font-bold text-slate-900">3</div>
+            <div>Forensic checks</div>
           </div>
           <div className="flex flex-col items-center gap-1">
-            <div className="text-3xl font-bold text-slate-900">&lt;20s</div>
-            <div>Processing</div>
+            <div className="text-3xl font-bold text-slate-900">Live</div>
+            <div>Issuer-site check</div>
           </div>
           <div className="flex flex-col items-center gap-1">
-            <div className="text-3xl font-bold text-slate-900">50+</div>
-            <div>Platforms</div>
+            <div className="text-3xl font-bold text-slate-900">PDF + Image</div>
+            <div>Supported formats</div>
           </div>
         </motion.div>
       </div>

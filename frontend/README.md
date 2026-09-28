@@ -1,4 +1,4 @@
-# SkillKendra Frontend
+# CAFS (Certificate Anti Forgery System) Frontend
 
 Modern certificate verification platform frontend built with Next.js 14, TypeScript, and Tailwind CSS.
 
@@ -114,4 +114,4 @@ This frontend follows a **monorepo sibling architecture**, designed to be:
 
 ## 📄 License
 
-Part of the SkillKendra platform.
+Part of the CAFS (Certificate Anti Forgery System) platform.

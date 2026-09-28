@@ -5,7 +5,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "SkillKendra - Verify Credentials with Confidence",
+  title: "CAFS - Certificate Anti Forgery System",
   description: "Advanced AI-powered certificate verification platform using secure authentication",
 };
 

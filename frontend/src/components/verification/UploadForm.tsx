@@ -1,9 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { UploadCloud, File as FileIcon, Loader2, XCircle } from 'lucide-react';
 import { verificationService } from '@/services/api';
+
+const MAX_SIZE_MB = 10; // keep in sync with backend MAX_UPLOAD_BYTES
+const VALID_EXTENSIONS = ['.pdf', '.png', '.jpg', '.jpeg', '.webp'];
+const VALID_TYPES = ['application/pdf', 'image/png', 'image/jpeg', 'image/webp'];
 
 export default function UploadForm() {
   const router = useRouter();
@@ -11,6 +15,7 @@ export default function UploadForm() {
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Handle Drag Events
   const handleDragOver = (e: React.DragEvent) => {
@@ -36,20 +41,22 @@ export default function UploadForm() {
     if (e.target.files && e.target.files[0]) {
       validateAndSetFile(e.target.files[0]);
     }
+    // Allow re-selecting the same file after an error
+    e.target.value = '';
   };
 
   const validateAndSetFile = (selectedFile: File) => {
-    // Basic validation (e.g., allow PDF, PNG, JPG)
-    const validTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
-    if (!validTypes.includes(selectedFile.type)) {
-      setError('Invalid file type. Please upload a PDF or Image.');
+    // Some browsers report an empty MIME type, so fall back to the extension.
+    // (The server re-checks the real file contents.)
+    const name = selectedFile.name.toLowerCase();
+    const typeOk = selectedFile.type ? VALID_TYPES.includes(selectedFile.type) : VALID_EXTENSIONS.some((ext) => name.endsWith(ext));
+    if (!typeOk) {
+      setError('Invalid file type. Please upload a PDF, PNG, JPG or WebP file.');
       return;
     }
     
-    // Check file size (max 5MB)
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    if (selectedFile.size > maxSize) {
-      setError('File size exceeds 5MB. Please upload a smaller file.');
+    if (selectedFile.size > MAX_SIZE_MB * 1024 * 1024) {
+      setError(`File size exceeds ${MAX_SIZE_MB}MB. Please upload a smaller file.`);
       return;
     }
     
@@ -67,13 +74,18 @@ export default function UploadForm() {
     try {
       const data = await verificationService.uploadCertificate(file);
       
-      // Store the result in sessionStorage to access on the next page
-      sessionStorage.setItem('verificationResult', JSON.stringify(data));
+      // Hand the result to the results page (sessionStorage can be unavailable, e.g. private mode)
+      try {
+        sessionStorage.setItem('verificationResult', JSON.stringify(data));
+      } catch {
+        setError('Your browser blocked temporary storage, so the result cannot be shown. Please disable private mode and try again.');
+        setIsUploading(false);
+        return;
+      }
       
-      // Redirect to results page
       router.push('/verify-result');
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong connecting to the server.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Something went wrong connecting to the server.');
       setIsUploading(false);
     }
   };
@@ -93,11 +105,14 @@ export default function UploadForm() {
         `}
       >
         <input
+          ref={inputRef}
           type="file"
           id="certificate-upload"
+          aria-label="Upload a certificate (PDF, PNG, JPG or WebP)"
+          aria-describedby={error ? 'upload-error' : undefined}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
           onChange={handleFileChange}
-          accept=".pdf,.png,.jpg,.jpeg"
+          accept=".pdf,.png,.jpg,.jpeg,.webp"
           disabled={isUploading}
         />
 
@@ -118,7 +133,7 @@ export default function UploadForm() {
               <div className="text-slate-600">
                 <span className="font-semibold text-orange-600">Click to upload</span> or drag and drop
               </div>
-              <p className="text-xs text-slate-500">PDF, PNG, JPG (Max 5MB)</p>
+              <p className="text-xs text-slate-500">PDF, PNG, JPG, WebP (Max {MAX_SIZE_MB}MB). For PDFs, only the first page is checked.</p>
             </>
           )}
         </div>
@@ -126,7 +141,7 @@ export default function UploadForm() {
 
       {/* Error Message */}
       {error && (
-        <div className="mt-4 p-3 bg-red-50 text-red-600 text-sm rounded-md flex items-center gap-2 border border-red-200">
+        <div id="upload-error" role="alert" className="mt-4 p-3 bg-red-50 text-red-600 text-sm rounded-md flex items-center gap-2 border border-red-200">
           <XCircle className="w-4 h-4" />
           {error}
         </div>

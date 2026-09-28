@@ -53,17 +53,17 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({
       benefits: [
         "Drag & drop or click to upload",
         "Supports PDF, PNG, JPG formats",
-        "Secure file handling (max 5MB)",
+        "Files up to 10MB",
       ],
     },
     {
       icon: <Shield className="h-6 w-6" />,
       title: "AI Analysis",
       description:
-        "Advanced AI agents perform forensics detection, OCR extraction, and authenticity verification.",
+        "We check the file for signs of tampering, read the certificate details, and look them up on the issuer's site.",
       benefits: [
-        "Multi-engine OCR (Tesseract, PaddleOCR, EasyOCR)",
-        "Forgery detection with TruFor model",
+        "Reads the name, ID and issuer from the document",
+        "Image-forensics checks for signs of editing",
         "Automatic issuer verification",
       ],
     },
@@ -71,10 +71,10 @@ export const HowItWorks: React.FC<HowItWorksProps> = ({
       icon: <CheckCircle className="h-6 w-6" />,
       title: "Get Results",
       description:
-        "Receive instant verification results with detailed analysis and authenticity status.",
+        "Receive a verdict with the supporting details, plus a shareable proof you can validate online.",
       benefits: [
-        "Instant results in under 10 seconds",
-        "98% accuracy rate",
+        "Checked against the issuer's own verification page",
+        "Clear verified / unverified / flagged verdict",
         "Detailed forensics report",
       ],
     },

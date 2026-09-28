@@ -2,7 +2,7 @@
 app/schemas.py
 Pydantic models for data validation and API responses.
 """
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional, List, Union
 from enum import Enum
 from difflib import SequenceMatcher
@@ -98,6 +98,7 @@ class ForensicsResult(BaseModel):
     manipulation_score: float
     is_high_risk: bool
     status: str
+    inconclusive: bool = False
     details: Optional[List[str]] = []
     # LLM Analysis Fields
     llm_analysis: Optional[str] = None
@@ -140,7 +141,8 @@ class CertificateAnalysisResponse(BaseModel):
     forensics: ForensicsResult
     extraction: ExtractionResult
     verification: VerificationResult
+    report_token: Optional[str] = None   # signed proof; only issued for VERIFIED results
 
 class ManualVerificationRequest(BaseModel):
-    certificate_id: str
-    issuer_url: str
+    certificate_id: str = Field(min_length=3, max_length=128)
+    issuer_url: str = Field(min_length=8, max_length=2048)

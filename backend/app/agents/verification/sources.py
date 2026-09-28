@@ -46,7 +46,7 @@ class TrustedSourceRegistry:
         # Default trusted domains
         self.trusted_domains = {
             "ude.my", "udemy.com", "coursera.org", "edx.org",
-            "credentials.edx.org", "linkedin.com", "google.com",
+            "credentials.edx.org", "linkedin.com",
             "skillshop.exceedlms.com", "credly.com"
         }
 
@@ -63,8 +63,11 @@ class TrustedSourceRegistry:
                         if not url.startswith(('http://', 'https://')):
                             url = 'https://' + url
                         
-                        domain = urlparse(url).netloc.lower().replace("www.", "")
-                        self.trusted_domains.add(domain)
+                        domain = (urlparse(url).hostname or "").lower()
+                        if domain.startswith("www."):
+                            domain = domain[4:]
+                        if domain:
+                            self.trusted_domains.add(domain)
                         
                         if org:
                             self.org_map[org.lower()] = url
@@ -73,13 +76,20 @@ class TrustedSourceRegistry:
             print(f"Warning: Could not load trusted sources CSV: {e}")
 
     def is_trusted(self, url: str) -> bool:
-        """Checks if a URL belongs to a trusted domain"""
+        """Checks that a URL is https and its host exactly matches a trusted domain.
+
+        Subdomains are NOT implicitly trusted: shared hosts such as linkedin.com or
+        google.com serve user-controlled content on subdomains.
+        """
         try:
-            domain = urlparse(url).netloc.lower().replace("www.", "")
-            return domain in self.trusted_domains or any(
-                domain.endswith(f".{trusted}") for trusted in self.trusted_domains
-            )
-        except:
+            parsed = urlparse(url)
+            if parsed.scheme != "https" or not parsed.hostname:
+                return False
+            domain = parsed.hostname.lower()
+            if domain.startswith("www."):
+                domain = domain[4:]
+            return domain in self.trusted_domains
+        except Exception:
             return False
 
     def generate_urls(self, url: Optional[str], cert_id: Optional[str], org_name: Optional[str]) -> List[str]:

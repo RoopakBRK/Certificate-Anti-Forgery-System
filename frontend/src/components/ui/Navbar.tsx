@@ -4,6 +4,12 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ShieldCheck, Menu, X } from 'lucide-react';
 
+const NAV_ITEMS = [
+  { label: 'Home', href: '/' },
+  { label: 'Verify', href: '/#verify' },
+  { label: 'How It Works', href: '/#how-it-works' },
+];
+
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -13,12 +19,21 @@ export default function Navbar() {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
     };
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Close the mobile menu with Escape
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setIsOpen(false);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isOpen]);
+
   return (
     <nav 
+      aria-label="Main"
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled 
           ? 'bg-slate-900/80 backdrop-blur-md border-b border-slate-700 shadow-lg py-2' 
@@ -31,34 +46,34 @@ export default function Navbar() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group">
             <div className="bg-orange-600 p-1.5 rounded-lg group-hover:bg-orange-500 transition-colors">
-              <ShieldCheck className="w-6 h-6 text-white" />
+              <ShieldCheck className="w-10 h-10 text-white" />
             </div>
             <span className={`text-xl font-bold tracking-tight transition-colors ${
               scrolled ? 'text-white' : 'text-slate-900'
             }`}>
-              SKILL<span className="text-orange-600">KENDRA</span>
+              CAFS<span className="text-orange-600"> · Anti Forgery</span>
             </span>
           </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            {['Home', 'Verify', 'About'].map((item) => (
+            {NAV_ITEMS.map((item) => (
               <Link 
-                key={item}
-                href={item === 'Home' ? '/' : `/#${item.toLowerCase()}`} 
+                key={item.label}
+                href={item.href} 
                 className={`text-sm font-medium transition-colors hover:text-orange-500 ${
                   scrolled ? 'text-slate-300' : 'text-slate-700'
                 }`}
               >
-                {item}
+                {item.label}
               </Link>
             ))}
             
             <Link 
-              href="/profile" 
+              href="/#verify" 
               className="px-5 py-2.5 rounded-full bg-orange-600 text-white text-sm font-semibold hover:bg-orange-700 transition-all shadow-md hover:shadow-orange-500/20"
             >
-              Profile
+              Verify Now
             </Link>
           </div>
 
@@ -67,6 +82,8 @@ export default function Navbar() {
             onClick={() => setIsOpen(!isOpen)}
             className="md:hidden p-2 rounded-lg hover:bg-white/10 transition-colors"
             aria-label="Toggle menu"
+            aria-expanded={isOpen}
+            aria-controls="mobile-menu"
           >
             {isOpen ? (
               <X className={`w-6 h-6 ${scrolled ? 'text-white' : 'text-slate-900'}`} />
@@ -78,23 +95,23 @@ export default function Navbar() {
 
         {/* Mobile Navigation */}
         {isOpen && (
-          <div className="md:hidden absolute top-full left-0 right-0 bg-slate-900 border-t border-slate-800 shadow-xl p-4 space-y-3">
-            {['Home', 'Verify', 'About'].map((item) => (
+          <div id="mobile-menu" className="md:hidden absolute top-full left-0 right-0 bg-slate-900 border-t border-slate-800 shadow-xl p-4 space-y-3">
+            {NAV_ITEMS.map((item) => (
               <Link 
-                key={item}
-                href={item === 'Home' ? '/' : `/#${item.toLowerCase()}`}
+                key={item.label}
+                href={item.href}
                 className="block px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-orange-500 rounded-lg transition-colors font-medium"
                 onClick={() => setIsOpen(false)}
               >
-                {item}
+                {item.label}
               </Link>
             ))}
              <Link 
-              href="/profile" 
+              href="/#verify" 
               className="block w-full text-center px-4 py-3 bg-orange-600 text-white rounded-lg font-bold hover:bg-orange-700 transition-colors"
               onClick={() => setIsOpen(false)}
             >
-              Profile
+              Verify Now
             </Link>
           </div>
         )}

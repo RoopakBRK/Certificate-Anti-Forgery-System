@@ -1,71 +1,67 @@
-import type { CertificateAnalysisResponse } from '@/types';
+import type { CertificateAnalysisResponse, ReportPayload } from '@/types';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || (
+  process.env.NODE_ENV === 'production' ? '' : 'http://127.0.0.1:8000'
+);
+
+// Verification runs OCR + forensics + a live issuer lookup, so allow a generous timeout
+const REQUEST_TIMEOUT_MS = 120_000;
+
+async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  if (!API_BASE_URL) {
+    throw new Error('The verification service is not configured (NEXT_PUBLIC_API_URL is missing).');
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, { ...init, signal: controller.signal });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error('The request timed out. Please try again.');
+    }
+    // fetch() rejects with a TypeError on network failure / CORS / server down
+    throw new Error('Could not reach the verification server. Please check your connection and try again.');
+  } finally {
+    clearTimeout(timer);
+  }
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    const detail = typeof body?.detail === 'string' ? body.detail : null;
+    throw new Error(detail || `Request failed (HTTP ${response.status}).`);
+  }
+  return response.json() as Promise<T>;
+}
 
 export const verificationService = {
-  async uploadCertificate(file: File): Promise<CertificateAnalysisResponse> {
+  uploadCertificate(file: File): Promise<CertificateAnalysisResponse> {
     const formData = new FormData();
     formData.append('file', file);
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/verify`, {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        // Try to get error details from response
-        const error = await response.json().catch(() => ({
-          detail: `Server returned ${response.status}`
-        }));
-        throw new Error(error.detail || `HTTP error! status: ${response.status}`);
-      }
-
-      const data: CertificateAnalysisResponse = await response.json();
-      return data;
-
-    } catch (error) {
-      if (error instanceof Error) {
-        throw error;
-      }
-      throw new Error('Failed to connect to verification server. Please ensure the backend is running.');
-    }
+    return request<CertificateAnalysisResponse>('/verify', { method: 'POST', body: formData });
   },
 
-  async manualVerify(data: { certificate_id: string; issuer_url: string }): Promise<CertificateAnalysisResponse> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/verify/manual`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
+  manualVerify(data: { certificate_id: string; issuer_url: string }): Promise<CertificateAnalysisResponse> {
+    return request<CertificateAnalysisResponse>('/verify/manual', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+  },
 
-      if (!response.ok) {
-        const error = await response.json().catch(() => ({
-          detail: `Server returned ${response.status}`
-        }));
-        throw new Error(error.detail || `HTTP error! status: ${response.status}`);
-      }
-
-      const result: CertificateAnalysisResponse = await response.json();
-      return result;
-
-    } catch (error) {
-      if (error instanceof Error) {
-        throw error;
-      }
-      throw new Error('Manual verification failed.');
-    }
+  /** Ask the server whether a report token is genuine and get its contents. */
+  getReport(token: string): Promise<ReportPayload> {
+    return request<ReportPayload>(`/report?token=${encodeURIComponent(token)}`);
   },
 
   async checkHealth(): Promise<boolean> {
     try {
-      const response = await fetch(`${API_BASE_URL}/docs`);
-      return response.ok;
+      await request<{ status: string }>('/health');
+      return true;
     } catch {
       return false;
     }
-  }
+  },
 };

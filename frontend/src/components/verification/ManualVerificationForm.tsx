@@ -28,15 +28,15 @@ export default function ManualVerificationForm({ onVerificationComplete }: Manua
 
     try {
       const result = await verificationService.manualVerify({
-        certificate_id: certificateId,
-        issuer_url: issuerUrl,
+        certificate_id: certificateId.trim(),
+        issuer_url: issuerUrl.trim(),
       });
       
       if (onVerificationComplete) {
         onVerificationComplete(result);
       }
-    } catch (err: any) {
-      setError(err.message || 'Verification failed. Please try again.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Verification failed. Please try again.');
     } finally {
       setIsVerifying(false);
     }
@@ -54,7 +54,7 @@ export default function ManualVerificationForm({ onVerificationComplete }: Manua
           <div>
             <h3 className="font-bold text-gray-900 text-lg">Manual Verification Required</h3>
             <p className="text-slate-600 mt-1 leading-relaxed">
-              We couldn't automatically verify this certificate. Please enter the details manually below.
+              We couldn&apos;t automatically verify this certificate. Enter its ID and the issuer&apos;s verification link below. We&apos;ll check that the ID appears on the issuer&apos;s own page. This confirms the ID exists but does not check the name on your document.
             </p>
           </div>
         </div>
@@ -80,6 +80,8 @@ export default function ManualVerificationForm({ onVerificationComplete }: Manua
                 placeholder="e.g., ABC123456789"
                 className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 outline-none placeholder:text-slate-400"
                 disabled={isVerifying}
+                aria-invalid={!!error}
+                aria-describedby={error ? 'manual-error' : undefined}
               />
             </div>
             <p className="mt-2 text-xs text-slate-500 flex items-center gap-1">
@@ -109,7 +111,7 @@ export default function ManualVerificationForm({ onVerificationComplete }: Manua
 
         {/* Error Message */}
         {error && (
-          <div className="p-4 bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+          <div id="manual-error" role="alert" className="p-4 bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
             <AlertCircle className="w-5 h-5 shrink-0" />
             <span className="font-medium">{error}</span>
           </div>

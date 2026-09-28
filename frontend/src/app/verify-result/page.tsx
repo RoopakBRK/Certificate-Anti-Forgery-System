@@ -7,6 +7,7 @@ import Navbar from '@/components/ui/Navbar';
 import VerifiedCertificate from '@/components/verification/VerifiedCertificate';
 import ManualVerificationForm from '@/components/verification/ManualVerificationForm';
 import CertificateNotFound from '@/components/verification/CertificateNotFound';
+import FlaggedCertificate from '@/components/verification/FlaggedCertificate';
 import { Loader2, ArrowLeft, AlertTriangle } from 'lucide-react';
 import { CertificateAnalysisResponse } from '@/types';
 
@@ -18,31 +19,29 @@ export default function VerifyResultPage() {
 
   useEffect(() => {
     // Retrieve the verification result from sessionStorage
-    const storedResult = sessionStorage.getItem('verificationResult');
-    
-    if (storedResult) {
-      try {
+    try {
+      const storedResult = sessionStorage.getItem('verificationResult');
+      if (storedResult) {
         const parsedResult: CertificateAnalysisResponse = JSON.parse(storedResult);
         setResult(parsedResult);
-        
-        // Determine if manual verification is needed
-        const needsManualVerification = 
-          parsedResult.final_verdict === 'UNVERIFIED' || 
-          parsedResult.final_verdict.includes('FLAGGED') ||
-          !parsedResult.verification.is_verified;
-        
-        setShowManualForm(needsManualVerification);
-      } catch (error) {
-        console.error('Error parsing verification result:', error);
+        // Offer manual verification only for plain UNVERIFIED results.
+        // A FLAGGED (tampered) document must never be turned into "verified" by typing an ID.
+        setShowManualForm(!parsedResult.verification.is_verified && !parsedResult.forensics.is_high_risk);
       }
+    } catch (error) {
+      console.error('Error reading verification result:', error);
     }
-    
     setIsLoading(false);
   }, []);
 
   const handleManualVerificationComplete = (data: CertificateAnalysisResponse) => {
     setResult(data);
     setShowManualForm(false);
+    try {
+      sessionStorage.setItem('verificationResult', JSON.stringify(data));
+    } catch {
+      /* storage unavailable: the result still shows on this page */
+    }
   };
 
   if (isLoading) {
@@ -109,24 +108,17 @@ export default function VerifyResultPage() {
         </div>
 
         {/* Render appropriate component based on verification status */}
-        {showManualForm ? (
-          <div>
-            <ManualVerificationForm onVerificationComplete={handleManualVerificationComplete} />
-          </div>
+        {result.forensics.is_high_risk ? (
+          <FlaggedCertificate data={result} />
+        ) : showManualForm ? (
+          <ManualVerificationForm onVerificationComplete={handleManualVerificationComplete} />
+        ) : result.verification.is_verified ? (
+          <VerifiedCertificate data={result} />
         ) : (
-          <div>
-            {result.verification.is_verified ? (
-                <VerifiedCertificate data={result} />
-            ) : (
-                <CertificateNotFound />
-            )}
-            
-            {/* Option to try manual verification - Only show if Verified (to allow re-verify?) or maybe just hide if not found? 
-                Actually if Not Found, CertificateNotFound page has "Try Again" which reloads. 
-                If Verified, we might not need this button anymore. 
-                But let's keep it consistent with request: "if verified -> verified page", "if not -> not found page".
-            */}
-          </div>
+          <CertificateNotFound
+            message={result.verification.message}
+            onRetry={() => setShowManualForm(true)}
+          />
         )}
       </div>
     </main>

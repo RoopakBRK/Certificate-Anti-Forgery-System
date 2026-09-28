@@ -29,10 +29,10 @@ class ForensicsAgent:
         """
         self.use_trufor = use_trufor
         self.trufor_detector = None
-        
+            
         if use_trufor:
             try:
-                from app.agents.trufor_detector import TruForDetector
+                from app.agents.forensics.trufor_detector import TruForDetector
                 self.trufor_detector = TruForDetector()
                 logger.info("✓ TruFor detector initialized")
             except Exception as e:
@@ -198,10 +198,16 @@ class ForensicsAgent:
         # Calculate final score
         final_score = ela_result.get('score', 0.0)
         
-        if trufor_result and 'manipulation_score' in trufor_result:
+        trufor_ok = bool(trufor_result) and 'manipulation_score' in trufor_result
+        if trufor_ok:
             # Weight TruFor more heavily (it's more accurate)
             final_score = (ela_result.get('score', 0.0) * 0.3 + 
                           trufor_result.get('manipulation_score', 0.0) * 0.7)
+        
+        # Checks that crashed must never read as a clean pass
+        ela_failed = 'error' in ela_result
+        trufor_failed = ela_result.get('is_suspicious', False) and not trufor_ok
+        inconclusive = ela_failed or trufor_failed
         
         # Determine verdict
         is_high_risk = final_score > 0.65
@@ -209,6 +215,8 @@ class ForensicsAgent:
         # Build status message
         if is_high_risk:
             status = "High Risk - Possible Digital Manipulation Detected"
+        elif inconclusive:
+            status = "Inconclusive - Forensic analysis could not be completed"
         elif final_score > 0.4:
             status = "Medium Risk - Some Irregularities Detected"
         else:
@@ -224,6 +232,12 @@ class ForensicsAgent:
         else:
             details.append(f"Analysis Method: ELA (Fast Check)")
         
+        if ela_failed:
+            details.append(f"ELA check failed: {ela_result.get('error')}")
+        if trufor_failed:
+            reason = (trufor_result or {}).get('error', 'TruFor unavailable')
+            details.append(f"TruFor deep analysis unavailable: {reason}")
+        
         if metadata_result.get('editing_software_detected'):
             details.append(f"Editing software detected: {', '.join(metadata_result.get('software_list', []))}")
         
@@ -235,6 +249,7 @@ class ForensicsAgent:
             'manipulation_score': final_score,
             'is_high_risk': is_high_risk,
             'status': status,
+            'inconclusive': inconclusive,
             'details': details,
             'ela_analysis': ela_result,
             'trufor_analysis': trufor_result,

@@ -1,0 +1,7 @@
+# Run frontend + backend together (from anywhere). Ctrl+C stops both.
+bash /Users/roopakkrishna/Documents/newageprojects/skillkendrawebsite/CAFS_final/start.sh
+
+# What it runs (contents of start.sh):
+#   backend : cd backend  && uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
+#   frontend: cd frontend && npm run dev -- --port 3000
+# Then open: http://localhost:3000   (API docs: http://127.0.0.1:8000/docs)

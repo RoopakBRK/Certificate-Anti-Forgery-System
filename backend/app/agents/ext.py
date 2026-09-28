@@ -4,6 +4,7 @@ Enhanced extraction agent with dual OCR cascade (Tesseract → EasyOCR)
 """
 
 import asyncio
+import threading
 import pytesseract
 from PIL import Image, ImageEnhance
 import io
@@ -41,20 +42,36 @@ class ExtractionAgent:
         
         # EasyOCR reader (lazy load - only initialize when needed)
         self.easyocr_reader = None
+        self._easyocr_lock = threading.Lock()
+        # Cap concurrent OCR jobs; timed-out worker threads keep running, so bound them
+        self._ocr_slots = asyncio.Semaphore(2)
         
         logger.info("✓ Extraction agent initialized with Mistral")
 
+    async def _run_bounded(self, fn, timeout: float):
+        """Run blocking OCR `fn` in a worker thread, at most N at a time.
+
+        The slot is released when the thread actually finishes (not when we time out),
+        so abandoned jobs cannot pile up unbounded.
+        """
+        await self._ocr_slots.acquire()
+        loop = asyncio.get_running_loop()
+        fut = loop.run_in_executor(None, fn)
+        fut.add_done_callback(lambda _: self._ocr_slots.release())
+        return await asyncio.wait_for(asyncio.shield(fut), timeout=timeout)
+
     def _get_easyocr_reader(self):
         """Lazy load EasyOCR reader (only when needed)"""
-        if self.easyocr_reader is None:
-            try:
-                import easyocr
-                logger.info("📚 Initializing EasyOCR (one-time setup, may take 30s)...")
-                self.easyocr_reader = easyocr.Reader(['en'], gpu=False, verbose=False)
-                logger.info("✓ EasyOCR initialized successfully")
-            except Exception as e:
-                logger.error(f"❌ Failed to initialize EasyOCR: {e}")
-                self.easyocr_reader = False  # Mark as unavailable
+        with self._easyocr_lock:
+            if self.easyocr_reader is None:
+                try:
+                    import easyocr
+                    logger.info("📚 Initializing EasyOCR (one-time setup, may take 30s)...")
+                    self.easyocr_reader = easyocr.Reader(['en'], gpu=False, verbose=False)
+                    logger.info("✓ EasyOCR initialized successfully")
+                except Exception as e:
+                    logger.error(f"❌ Failed to initialize EasyOCR: {e}")
+                    self.easyocr_reader = False  # Mark as unavailable
         return self.easyocr_reader if self.easyocr_reader else None
 
     def _preprocess_image(self, image: Image.Image) -> Image.Image:
@@ -93,7 +110,7 @@ class ExtractionAgent:
             logger.warning(f"QR detection failed: {e}")
             return None
 
-    def _clean_certificate_id(self, cert_id: Optional[str]) -> str:
+    def _clean_certificate_id(self, cert_id: Optional[str]) -> Optional[str]:
         """Clean certificate ID by removing spaces and fixing OCR errors"""
         if not cert_id:
             return cert_id
@@ -121,14 +138,16 @@ class ExtractionAgent:
         
         return cleaned
 
-    def _clean_issuer_url(self, url: Optional[str], cert_id: Optional[str] = None) -> str:
+    def _clean_issuer_url(self, url: Optional[str], cert_id: Optional[str] = None) -> Optional[str]:
         """Clean and expand issuer URL"""
         if not url:
             return url
         
         url = url.strip()
         
-        if not url.startswith('http'):
+        if not re.match(r'^https?://', url, re.I):
+            if re.match(r'^[a-z][a-z0-9+.-]*:', url, re.I):
+                return None  # javascript:, file:, data: ... are never valid issuer URLs
             url = 'https://' + url
         
         from urllib.parse import urlparse
@@ -192,7 +211,7 @@ class ExtractionAgent:
         
         return cert_id
     
-    def _clean_issuer_name(self, issuer_name: Optional[str]) -> str:
+    def _clean_issuer_name(self, issuer_name: Optional[str]) -> Optional[str]:
         """Clean issuer name by removing common phrases"""
         if not issuer_name:
             return issuer_name
@@ -206,14 +225,11 @@ class ExtractionAgent:
             'certificate by'
         ]
         
-        issuer_name_lower = issuer_name.lower()
+        # Whole-word match only, so names such as "Viacom" or "Wharton Online" survive
         for phrase in phrases_to_remove:
-            if phrase in issuer_name_lower:
-                parts = issuer_name_lower.split(phrase, 1)
-                if len(parts) > 1:
-                    pos = issuer_name_lower.index(phrase) + len(phrase)
-                    issuer_name = issuer_name[pos:].strip()
-                    issuer_name_lower = issuer_name.lower()
+            matches = list(re.finditer(rf'\b{re.escape(phrase)}\b', issuer_name, re.I))
+            if matches:
+                issuer_name = issuer_name[matches[0].end():].strip()
         
         return issuer_name.strip()
 
@@ -319,10 +335,7 @@ class ExtractionAgent:
             return raw_text, elapsed
         
         try:
-            raw_text, elapsed = await asyncio.wait_for(
-                asyncio.to_thread(_ocr_task),
-                timeout=OCR_TIMEOUT_SECONDS
-            )
+            raw_text, elapsed = await self._run_bounded(_ocr_task, OCR_TIMEOUT_SECONDS)
             
             if raw_text and len(raw_text.strip()) > MIN_OCR_TEXT_LENGTH:
                 logger.info(f"✓ Tesseract: {elapsed:.2f}s, {len(raw_text)} chars")
@@ -364,10 +377,7 @@ class ExtractionAgent:
             return combined_text, elapsed
         
         try:
-            combined_text, elapsed = await asyncio.wait_for(
-                asyncio.to_thread(_ocr_task),
-                timeout=OCR_TIMEOUT_SECONDS
-            )
+            combined_text, elapsed = await self._run_bounded(_ocr_task, OCR_TIMEOUT_SECONDS)
             
             if combined_text and len(combined_text.strip()) > MIN_OCR_TEXT_LENGTH:
                 logger.info(f"✓ EasyOCR: {elapsed:.2f}s, {len(combined_text)} chars")
@@ -498,18 +508,28 @@ Return ONLY valid JSON (no markdown, no backticks):
 }}
 """
             
-            # Call Mistral API with timeout
-            try:
-                response = await asyncio.wait_for(
-                    asyncio.to_thread(
-                        self.client.chat.complete,
-                        model="mistral-large-latest",
-                        messages=[{"role": "user", "content": prompt}]
-                    ),
-                    timeout=MISTRAL_TIMEOUT_SECONDS
-                )
-            except asyncio.TimeoutError:
-                raise TimeoutError(f"Mistral API exceeded timeout of {MISTRAL_TIMEOUT_SECONDS}s")
+            # Call Mistral API with timeout, retrying transient failures (429 / 5xx)
+            response = None
+            for attempt in range(3):
+                try:
+                    response = await asyncio.wait_for(
+                        asyncio.to_thread(
+                            self.client.chat.complete,
+                            model=config.MISTRAL_MODEL,
+                            messages=[{"role": "user", "content": prompt}]
+                        ),
+                        timeout=MISTRAL_TIMEOUT_SECONDS
+                    )
+                    break
+                except asyncio.TimeoutError:
+                    if attempt == 2:
+                        raise TimeoutError(f"Mistral API exceeded timeout of {MISTRAL_TIMEOUT_SECONDS}s")
+                except Exception as e:
+                    status = getattr(e, "status_code", None)
+                    if status not in (429, 500, 502, 503, 504) or attempt == 2:
+                        raise
+                    logger.warning(f"Mistral transient error {status}, retrying...")
+                await asyncio.sleep(2 ** attempt)
 
             cleaned_text = response.choices[0].message.content
 
@@ -527,6 +547,9 @@ Return ONLY valid JSON (no markdown, no backticks):
                     else:
                         logger.error("Could not parse JSON from Mistral response")
                         raise ValueError("Failed to parse Mistral response as JSON")
+
+            if not isinstance(data, dict):
+                raise ValueError("Extraction response was not a JSON object")
 
             # STEP 6: Clean and validate
             issuer_name = data.get('issuer_name', '')

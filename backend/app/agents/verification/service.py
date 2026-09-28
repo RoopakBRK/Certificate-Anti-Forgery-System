@@ -1,36 +1,41 @@
 """
 app/agents/verification/service.py
-Core verification service with Smart Retry Logic.
+Core verification service.
+
+A certificate is VERIFIED only when the issuer page (a) is on a trusted host, and
+(b) shows the candidate's full name close together, and (c) refers to the same
+certificate ID (in the page text, or in the URL the page was fetched from).
 """
 import logging
-import re
-from difflib import SequenceMatcher
-from typing import Optional, Tuple
+from typing import Optional
 
 from app.schemas import ExtractionResult, VerificationResult
-from app.config import config
 from .sources import TrustedSourceRegistry
 from .scanner import fetch_page_text
 from .visual import VisualVerifier
+from .matching import name_match_score, id_in_text, normalize_id, MIN_ID_LENGTH
 
 logger = logging.getLogger(__name__)
+
 
 class VerificationService:
     def __init__(self):
         self.registry = TrustedSourceRegistry()
         self.visual = VisualVerifier()
 
-    def _fuzzy_match(self, candidate: str, page_text: str, threshold: float = 0.7) -> Tuple[bool, float]:
-        if not candidate or not page_text: return False, 0.0
-        cand_clean = re.sub(r'[^a-z0-9\s]', '', candidate.lower())
-        text_clean = re.sub(r'[^a-z0-9\s]', '', page_text.lower())
-        if cand_clean in text_clean: return True, 1.0
-        return SequenceMatcher(None, cand_clean, text_clean).ratio() >= threshold, SequenceMatcher(None, cand_clean, text_clean).ratio()
+    @staticmethod
+    def _id_confirmed(cert_id: Optional[str], url: str, page_text: Optional[str]) -> bool:
+        """The page must belong to this certificate: ID in the text or in the fetched URL."""
+        if not cert_id or len(normalize_id(cert_id)) < MIN_ID_LENGTH:
+            return False
+        return id_in_text(cert_id, page_text or "") or normalize_id(cert_id) in normalize_id(url)
 
     async def verify(self, data: ExtractionResult) -> VerificationResult:
         # A. Validation
         if not data.candidate_name:
             return VerificationResult(is_verified=False, trusted_domain=False, message="No candidate name.", method="validation_error")
+        if not data.certificate_id:
+            return VerificationResult(is_verified=False, trusted_domain=False, message="No certificate ID could be read from the document.", method="validation_error")
 
         # B. Get URLs
         org_name_str = data.issuer_name.value if data.issuer_name else (data.issuer_org or "")
@@ -38,109 +43,106 @@ class VerificationService:
         if not urls:
             return VerificationResult(is_verified=False, trusted_domain=False, message="No URL generated.", method="url_error")
 
-        # C. Trust Check
-        if not self.registry.is_trusted(urls[0]):
-            return VerificationResult(is_verified=False, trusted_domain=False, verification_url=urls[0], message="Untrusted domain.", method="security_check")
+        # C. Trust Check: every URL that will be fetched must be on a trusted host
+        untrusted = urls[0] if not self.registry.is_trusted(urls[0]) else None
+        urls = [u for u in urls if self.registry.is_trusted(u)]
+        if not urls:
+            return VerificationResult(is_verified=False, trusted_domain=False, verification_url=untrusted, message="Untrusted domain.", method="security_check")
 
-        # D. Smart Verification Loop
+        # D. Verification loop
         best_score = 0.0
         best_url = urls[0]
-        
+        name_ok_without_id = False
+
         for url in urls[:2]:
             logger.info(f"Scanning: {url}")
-            
-            # 1. Attempt Standard Scan (Fast)
+
+            # fetch_page_text falls back to the browser itself when the fast fetch is empty or blocked
             page_text, screenshot_path = await fetch_page_text(url, use_browser=True, force_browser=False)
-            
-            # 2. Check Text Match
+
+            # 1. Text match
             if page_text:
-                is_match, score = self._fuzzy_match(data.candidate_name, page_text)
-                if score > best_score: best_score = score
-                
+                is_match, score = name_match_score(data.candidate_name, page_text)
+                best_score = max(best_score, score)
                 if is_match:
-                    return VerificationResult(is_verified=True, trusted_domain=True, confidence_score=round(score,2), verification_url=url, method="dom_text_match", message=f"Verified via text. Match: {score:.0%}")
-            
-            # 3. SMART RETRY: If Text Match Failed AND we don't have a screenshot yet...
-            # This handles cases where HTTPX returned "Loading..." text but missed the real content.
-            if best_score < 0.7 and not screenshot_path:
-                logger.info("Text match failed on fast fetch. Forcing Browser Retry...")
+                    if self._id_confirmed(data.certificate_id, url, page_text):
+                        return VerificationResult(is_verified=True, trusted_domain=True, confidence_score=score, verification_url=url, method="dom_text_match", message=f"Verified via text. Name match: {score:.0%}")
+                    name_ok_without_id = True
+
+            # 2. The fast fetch was a plain HTTP response that did not match: render it in a browser
+            if not screenshot_path and best_score < 1.0:
+                logger.info("Text match failed on fast fetch. Forcing browser retry...")
                 page_text, screenshot_path = await fetch_page_text(url, force_browser=True)
-                
-                # Re-check text on the browser version
                 if page_text:
-                    is_match, score = self._fuzzy_match(data.candidate_name, page_text)
-                    if score > best_score: best_score = score
+                    is_match, score = name_match_score(data.candidate_name, page_text)
+                    best_score = max(best_score, score)
                     if is_match:
-                        return VerificationResult(is_verified=True, trusted_domain=True, confidence_score=round(score,2), verification_url=url, method="dom_text_match_retry", message=f"Verified via browser text. Match: {score:.0%}")
+                        if self._id_confirmed(data.certificate_id, url, page_text):
+                            return VerificationResult(is_verified=True, trusted_domain=True, confidence_score=score, verification_url=url, method="dom_text_match_retry", message=f"Verified via browser text. Name match: {score:.0%}")
+                        name_ok_without_id = True
 
-            # 4. Visual Fallback (Check the Screenshot pixels)
+            # 3. Visual fallback (OCR of the screenshot)
             if screenshot_path:
-                v_match, v_score, _ = self.visual.verify_screenshot(screenshot_path, data.candidate_name)
-                if v_score > best_score: best_score = v_score
-                
+                v_match, v_score, v_text = self.visual.verify_screenshot(screenshot_path, data.candidate_name)
+                best_score = max(best_score, v_score)
                 if v_match:
-                    return VerificationResult(is_verified=True, trusted_domain=True, confidence_score=round(v_score,2), verification_url=url, method="visual_ocr", message=f"Verified via visual OCR. Match: {v_score:.0%}")
+                    if self._id_confirmed(data.certificate_id, url, v_text):
+                        return VerificationResult(is_verified=True, trusted_domain=True, confidence_score=v_score, verification_url=url, method="visual_ocr", message=f"Verified via visual OCR. Name match: {v_score:.0%}")
+                    name_ok_without_id = True
 
-        return VerificationResult(is_verified=False, trusted_domain=True, confidence_score=round(best_score,2), verification_url=best_url, method="failed", message=f"Verification failed. Best Match: {best_score:.0%}")
+        if name_ok_without_id:
+            message = "The name was found on the issuer page, but the certificate ID could not be confirmed."
+        else:
+            message = f"Verification failed. Best name match: {best_score:.0%}"
+        return VerificationResult(is_verified=False, trusted_domain=True, confidence_score=best_score, verification_url=best_url, method="failed", message=message)
 
     async def manual_verify(self, certificate_id: str, issuer_url: str) -> VerificationResult:
         """
-        Manually verifies a certificate using ID and URL provided by user.
-        Checks for Certificate ID presence in the page text/screenshot.
+        Manually verifies a certificate using ID and URL provided by the user.
+        The URL must be a trusted issuer domain; the certificate ID must appear on the page.
         """
         logger.info(f"Manual Verification: {certificate_id} @ {issuer_url}")
-        
-        # 1. Fetch Page (Force Browser to ensure full render and screenshot)
-        page_text, screenshot_path = await fetch_page_text(issuer_url, force_browser=True)
-        
-        if not page_text and not screenshot_path:
-             logger.warning("Manual verify: No text and no screenshot.")
-             return VerificationResult(is_verified=False, trusted_domain=False, verification_url=issuer_url, method="manual_failed", message="Could not fetch page content.")
 
-        # 2. Check for Certificate ID in Text
-        confidence = 0.0
-        is_verified = False
-        method = "manual_failed"
+        if len(normalize_id(certificate_id)) < MIN_ID_LENGTH:
+            return VerificationResult(is_verified=False, trusted_domain=False, verification_url=issuer_url, method="manual_failed", message=f"Certificate ID must be at least {MIN_ID_LENGTH} letters/digits to be checked reliably.")
+
+        # Only issuer domains from the trusted registry may be used as proof
+        if not self.registry.is_trusted(issuer_url):
+            return VerificationResult(is_verified=False, trusted_domain=False, verification_url=issuer_url, method="security_check", message="URL is not a recognised issuer verification domain.")
+
+        page_text, screenshot_path = await fetch_page_text(issuer_url, force_browser=True)
+
+        if not page_text and not screenshot_path:
+            logger.warning("Manual verify: No text and no screenshot.")
+            return VerificationResult(is_verified=False, trusted_domain=True, verification_url=issuer_url, method="manual_failed", message="Could not fetch page content.")
+
+        is_verified, confidence, method = False, 0.0, "manual_failed"
         message = "Certificate ID not found on page."
 
-        # Normalize logic
-        clean_id = re.sub(r'[^a-zA-Z0-9]', '', certificate_id).lower()
-        
-        if page_text:
-            clean_text = re.sub(r'[^a-zA-Z0-9]', '', page_text).lower()
-            # Debug log
-            logger.info(f"Manual Text Check: Looking for '{clean_id}' in {len(clean_text)} chars. text[:50]={clean_text[:50]}...")
-            
-            if clean_id in clean_text:
-                confidence = 1.0
-                is_verified = True
-                method = "manual_text_match"
-                message = "Certificate ID found in page text."
+        if page_text and id_in_text(certificate_id, page_text):
+            is_verified, confidence, method = True, 1.0, "manual_text_match"
+            message = "Certificate ID found in page text."
 
-        # 3. Check for Certificate ID in Screenshot (OCR)
         if not is_verified and screenshot_path:
-            # We use the VisualVerifier but need to adapt it effectively for ID
-            # VisualVerifier.verify_screenshot expects candidate_name to match
-            # We can re-use it by passing certificate_id as the "name" to look for
-            v_match, v_score, extracted_text = self.visual.verify_screenshot(screenshot_path, certificate_id)
+            v_match, v_score, _ = self.visual.verify_screenshot_id(screenshot_path, certificate_id)
             if v_match:
-                confidence = v_score
-                is_verified = True
-                method = "manual_visual_ocr"
-                message = f"Certificate ID found in screenshot. Match: {v_score:.0%}"
-        
+                is_verified, confidence, method = True, v_score, "manual_visual_ocr"
+                message = "Certificate ID found in screenshot."
+
         return VerificationResult(
             is_verified=is_verified,
-            trusted_domain=True, # We assume user provided URL is where they want to check, or we could valid against registry
+            trusted_domain=True,
             confidence_score=confidence,
             verification_url=issuer_url,
             method=method,
             message=message
         )
 
+
 # Singleton
 _service_instance: Optional[VerificationService] = None
 def get_verification_service() -> VerificationService:
     global _service_instance
-    if _service_instance is None: _service_instance = VerificationService()
+    if _service_instance is None:
+        _service_instance = VerificationService()
     return _service_instance
