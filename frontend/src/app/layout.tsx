@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { Inter, Fraunces } from "next/font/google";
+import { Inter, Source_Serif_4 } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
-const fraunces = Fraunces({ subsets: ["latin"], variable: "--font-display", axes: ["opsz"] });
+const sourceSerif = Source_Serif_4({ subsets: ["latin"], variable: "--font-display", axes: ["opsz"] });
 
 export const metadata: Metadata = {
   title: "CAFS - Certificate Anti Forgery System",
@@ -23,7 +23,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${inter.variable} ${fraunces.variable}`}>
+    <html lang="en" className={`${inter.variable} ${sourceSerif.variable}`}>
       <body className="font-sans">{children}</body>
     </html>
   );
