@@ -56,7 +56,7 @@ def test_forensics_dict_converts_to_schema():
 
 def test_full_pipeline_uses_forensics_object(monkeypatch):
     """Regression: /verify used to 500 because forensics returned a dict."""
-    async def fake_extract(_):
+    async def fake_extract(_, **kw):
         return {"candidate_name": "Jane Doe", "certificate_id": "ABCD1234EFGH", "issuer_name": "Coursera"}
 
     async def fake_verify(_):
@@ -71,7 +71,7 @@ def test_full_pipeline_uses_forensics_object(monkeypatch):
 
 
 def test_inconclusive_forensics_never_verified(monkeypatch):
-    async def fake_extract(_):
+    async def fake_extract(_, **kw):
         return {"candidate_name": "Jane Doe", "certificate_id": "ABCD1234EFGH", "issuer_name": "Coursera"}
 
     async def fake_verify(_):
@@ -103,7 +103,7 @@ def test_report_token_roundtrip_and_tamper():
 
 
 def test_verified_response_carries_report_token(monkeypatch):
-    async def fake_extract(_):
+    async def fake_extract(_, **kw):
         return {"candidate_name": "Jane Doe", "certificate_id": "ABCD1234EFGH", "issuer_name": "Coursera"}
 
     async def fake_verify(_):

@@ -43,17 +43,17 @@ export default function ManualVerificationForm({ onVerificationComplete }: Manua
   };
 
   return (
-    <div className="w-full max-w-xl mx-auto p-4">
+    <div className="w-full max-w-2xl mx-auto">
       
       {/* Modern Info Header */}
-      <div className="bg-amber-50 border-l-4 border-amber-500 rounded-r-lg p-5 mb-8 shadow-sm">
+      <div className="rounded-xl border border-warn-200 bg-warn-50 p-5 mb-6">
         <div className="flex items-start gap-4">
-          <div className="p-2 bg-amber-100 rounded-full shrink-0">
-            <AlertCircle className="w-5 h-5 text-amber-600" />
+          <div className="p-2 bg-warn-100 rounded-full shrink-0">
+            <AlertCircle className="w-5 h-5 text-warn-700" />
           </div>
           <div>
-            <h3 className="font-bold text-gray-900 text-lg">Manual Verification Required</h3>
-            <p className="text-slate-600 mt-1 leading-relaxed">
+            <h3 className="font-display font-semibold text-navy-900 text-xl">Manual Verification Required</h3>
+            <p className="text-navy-700 mt-1 leading-relaxed text-sm">
               We couldn&apos;t automatically verify this certificate. Enter its ID and the issuer&apos;s verification link below. We&apos;ll check that the ID appears on the issuer&apos;s own page. This confirms the ID exists but does not check the name on your document.
             </p>
           </div>
@@ -63,12 +63,12 @@ export default function ManualVerificationForm({ onVerificationComplete }: Manua
       {/* Card Form */}
       <form 
         onSubmit={handleSubmit} 
-        className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 p-8 space-y-6"
+        className="card p-6 sm:p-8 space-y-6"
       >
         <div className="space-y-6">
           {/* Certificate ID Input */}
           <div className="group">
-            <label htmlFor="certificate-id" className="block text-sm font-semibold text-slate-700 mb-2">
+            <label htmlFor="certificate-id" className="block text-sm font-semibold text-navy-800 mb-2">
               Certificate ID
             </label>
             <div className="relative">
@@ -78,20 +78,20 @@ export default function ManualVerificationForm({ onVerificationComplete }: Manua
                 value={certificateId}
                 onChange={(e) => setCertificateId(e.target.value)}
                 placeholder="e.g., ABC123456789"
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 outline-none placeholder:text-slate-400"
+                className="w-full px-4 py-3 bg-paper border border-navy-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-navy-900/10 focus:border-navy-500 transition-all duration-200 outline-none placeholder:text-navy-300"
                 disabled={isVerifying}
                 aria-invalid={!!error}
                 aria-describedby={error ? 'manual-error' : undefined}
               />
             </div>
-            <p className="mt-2 text-xs text-slate-500 flex items-center gap-1">
+            <p className="mt-2 text-xs text-navy-500 flex items-center gap-1">
               <ArrowRight className="w-3 h-3" /> The unique ID found on the certificate
             </p>
           </div>
 
           {/* Issuer URL Input */}
           <div className="group">
-            <label htmlFor="issuer-url" className="block text-sm font-semibold text-slate-700 mb-2">
+            <label htmlFor="issuer-url" className="block text-sm font-semibold text-navy-800 mb-2">
               Issuer Verification URL
             </label>
             <input
@@ -100,10 +100,10 @@ export default function ManualVerificationForm({ onVerificationComplete }: Manua
               value={issuerUrl}
               onChange={(e) => setIssuerUrl(e.target.value)}
               placeholder="e.g., https://coursera.org/verify/..."
-              className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 outline-none placeholder:text-slate-400"
+              className="w-full px-4 py-3 bg-paper border border-navy-200 rounded-lg focus:bg-white focus:ring-2 focus:ring-navy-900/10 focus:border-navy-500 transition-all duration-200 outline-none placeholder:text-navy-300"
               disabled={isVerifying}
             />
-            <p className="mt-2 text-xs text-slate-500 flex items-center gap-1">
+            <p className="mt-2 text-xs text-navy-500 flex items-center gap-1">
               <ArrowRight className="w-3 h-3" /> The direct link to verify this credential
             </p>
           </div>
@@ -111,7 +111,7 @@ export default function ManualVerificationForm({ onVerificationComplete }: Manua
 
         {/* Error Message */}
         {error && (
-          <div id="manual-error" role="alert" className="p-4 bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
+          <div id="manual-error" role="alert" className="p-4 bg-danger-50 border border-danger-200 text-danger-700 text-sm rounded-lg flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
             <AlertCircle className="w-5 h-5 shrink-0" />
             <span className="font-medium">{error}</span>
           </div>
@@ -122,10 +122,10 @@ export default function ManualVerificationForm({ onVerificationComplete }: Manua
           type="submit"
           disabled={isVerifying || !certificateId.trim() || !issuerUrl.trim()}
           className={`
-            w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl font-semibold text-white text-sm tracking-wide transition-all duration-200
+            w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-lg font-semibold text-white text-sm transition-all duration-200
             ${isVerifying || !certificateId.trim() || !issuerUrl.trim()
-              ? 'bg-slate-300 cursor-not-allowed opacity-70' 
-              : 'bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-600/20 hover:shadow-xl hover:shadow-blue-600/30 active:scale-[0.98]'}
+              ? 'bg-navy-200 cursor-not-allowed' 
+              : 'bg-navy-900 hover:bg-navy-700 shadow-sm'}
           `}
         >
           {isVerifying ? (

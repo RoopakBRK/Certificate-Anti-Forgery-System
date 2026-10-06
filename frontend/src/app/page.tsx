@@ -3,40 +3,45 @@ import UploadForm from '@/components/verification/UploadForm';
 import Navbar from '@/components/ui/Navbar';
 import { HeroGrid } from '@/components/ui/HeroGrid';
 import { HowItWorks } from '@/components/ui/HowItWorks';
+import SupportedIssuers from '@/components/ui/SupportedIssuers';
+import Pricing from '@/components/ui/Pricing';
+import FAQ from '@/components/ui/FAQ';
+import Footer from '@/components/ui/Footer';
 
 export default function LandingPage() {
   return (
-    <main className="min-h-screen bg-white text-slate-900">
-      
-      {/* Navbar */}
+    <>
       <Navbar />
+      <main>
+        <HeroGrid />
+        <SupportedIssuers />
 
-      {/* Hero Section with Animated Grid */}
-      <HeroGrid />
+        {/* Verify */}
+        <section id="verify" className="py-20 sm:py-28">
+          <div className="mx-auto grid max-w-7xl items-start gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
+            <div className="lg:pt-6">
+              <p className="eyebrow">Start verification</p>
+              <h2 className="mt-3 font-display text-4xl font-semibold tracking-tight text-navy-900 sm:text-5xl">
+                Upload a certificate.
+              </h2>
+              <p className="mt-4 max-w-md text-lg text-navy-600">
+                Results take about 20 seconds. The file is checked in memory and never stored.
+              </p>
+              <ul className="mt-8 space-y-3 text-sm text-navy-700">
+                <li>• Works with Coursera, Udemy, edX, NPTEL, LinkedIn Learning, Credly and <a href="/issuers" className="underline underline-offset-4">70+ issuers</a></li>
+                <li>• Verified results come with a signed link and QR code to share</li>
+                <li>• Couldn&apos;t be matched automatically? You can confirm the ID by hand</li>
+              </ul>
+            </div>
+            <UploadForm />
+          </div>
+        </section>
 
-      {/* Upload Section - Same white background, no grid */}
-      <section id="verify" className="bg-white flex flex-col items-center justify-center px-4 py-20">
-        
-        {/* Section Header */}
-        <div className="text-center mb-12 max-w-3xl">
-          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-            Start Verification
-          </h2>
-          <p className="text-lg text-slate-600">
-            Upload your certificate and get instant verification results
-          </p>
-        </div>
-
-        {/* Centered Upload Card */}
-        <div className="w-full max-w-md">
-          <UploadForm />
-        </div>
-
-      </section>
-
-      {/* How It Works Section - Enhanced */}
-      <HowItWorks />
-      
-    </main>
+        <HowItWorks />
+        <Pricing />
+        <FAQ />
+      </main>
+      <Footer />
+    </>
   );
 }

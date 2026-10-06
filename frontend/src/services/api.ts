@@ -1,4 +1,5 @@
 import type { CertificateAnalysisResponse, ReportPayload } from '@/types';
+import { getAccessToken } from '@/lib/supabase/client';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || (
   process.env.NODE_ENV === 'production' ? '' : 'http://127.0.0.1:8000'
@@ -6,6 +7,12 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || (
 
 // Verification runs OCR + forensics + a live issuer lookup, so allow a generous timeout
 const REQUEST_TIMEOUT_MS = 120_000;
+
+/** Signed-in users send their Supabase token so the result is saved to their history. */
+async function authHeaders(): Promise<Record<string, string>> {
+  const token = await getAccessToken().catch(() => null);
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   if (!API_BASE_URL) {
@@ -37,16 +44,16 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 export const verificationService = {
-  uploadCertificate(file: File): Promise<CertificateAnalysisResponse> {
+  async uploadCertificate(file: File): Promise<CertificateAnalysisResponse> {
     const formData = new FormData();
     formData.append('file', file);
-    return request<CertificateAnalysisResponse>('/verify', { method: 'POST', body: formData });
+    return request<CertificateAnalysisResponse>('/verify', { method: 'POST', body: formData, headers: await authHeaders() });
   },
 
-  manualVerify(data: { certificate_id: string; issuer_url: string }): Promise<CertificateAnalysisResponse> {
+  async manualVerify(data: { certificate_id: string; issuer_url: string }): Promise<CertificateAnalysisResponse> {
     return request<CertificateAnalysisResponse>('/verify/manual', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(await authHeaders()) },
       body: JSON.stringify(data),
     });
   },

@@ -10,17 +10,17 @@ import logging
 from typing import Optional
 
 from app.schemas import ExtractionResult, VerificationResult
-from .sources import TrustedSourceRegistry
+from .sources import default_registry
 from .scanner import fetch_page_text
 from .visual import VisualVerifier
-from .matching import name_match_score, id_in_text, normalize_id, MIN_ID_LENGTH
+from .matching import name_match_score, id_in_text, normalize_id, looks_blocked, MIN_ID_LENGTH
 
 logger = logging.getLogger(__name__)
 
 
 class VerificationService:
     def __init__(self):
-        self.registry = TrustedSourceRegistry()
+        self.registry = default_registry()
         self.visual = VisualVerifier()
 
     @staticmethod
@@ -53,12 +53,16 @@ class VerificationService:
         best_score = 0.0
         best_url = urls[0]
         name_ok_without_id = False
+        pages_seen = pages_blocked = 0
 
         for url in urls[:2]:
             logger.info(f"Scanning: {url}")
 
             # fetch_page_text falls back to the browser itself when the fast fetch is empty or blocked
             page_text, screenshot_path = await fetch_page_text(url, use_browser=True, force_browser=False)
+            if page_text is not None:
+                pages_seen += 1
+                pages_blocked += looks_blocked(page_text)
 
             # 1. Text match
             if page_text:
@@ -90,11 +94,17 @@ class VerificationService:
                         return VerificationResult(is_verified=True, trusted_domain=True, confidence_score=v_score, verification_url=url, method="visual_ocr", message=f"Verified via visual OCR. Name match: {v_score:.0%}")
                     name_ok_without_id = True
 
+        method = "failed"
         if name_ok_without_id:
             message = "The name was found on the issuer page, but the certificate ID could not be confirmed."
+        elif pages_seen and pages_blocked == pages_seen and best_score == 0:
+            # A bot wall is not evidence against the certificate: say so instead of "0% match"
+            method = "issuer_blocked"
+            message = ("The issuer's website blocked our automated check (bot protection), so this certificate "
+                       "could not be confirmed automatically. Open the issuer link to check it yourself.")
         else:
             message = f"Verification failed. Best name match: {best_score:.0%}"
-        return VerificationResult(is_verified=False, trusted_domain=True, confidence_score=best_score, verification_url=best_url, method="failed", message=message)
+        return VerificationResult(is_verified=False, trusted_domain=True, confidence_score=best_score, verification_url=best_url, method=method, message=message)
 
     async def manual_verify(self, certificate_id: str, issuer_url: str) -> VerificationResult:
         """

@@ -63,3 +63,11 @@ def test_manual_verified_on_trusted_page(monkeypatch):
     s = _service(monkeypatch, "Certificate id ABCD-1234-EFGH issued " * 20)
     r = asyncio.run(s.manual_verify("ABCD1234EFGH", "https://www.coursera.org/verify/ABCD1234EFGH"))
     assert r.is_verified
+
+
+def test_issuer_bot_wall_is_reported_not_scored(monkeypatch):
+    wall = ("www.udemy.com Performing security verification This website uses a security service "
+            "to protect against malicious bots. This page is displayed while the website verifies you are not a bot.")
+    s = _service(monkeypatch, wall)
+    r = asyncio.run(s.verify(_extraction()))
+    assert not r.is_verified and r.method == "issuer_blocked"

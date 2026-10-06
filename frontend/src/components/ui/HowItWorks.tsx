@@ -1,134 +1,73 @@
-"use client";
-
-import { Upload, Shield, CheckCircle } from "lucide-react";
+import { Upload, ScanSearch, FileSearch, Globe } from "lucide-react";
 import type React from "react";
 
 interface HowItWorksProps extends React.HTMLAttributes<HTMLElement> {}
 
-interface StepCardProps {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-  benefits: string[];
-}
+// Mirrors the backend pipeline in backend/app/main.py (/verify)
+const STEPS = [
+  {
+    icon: Upload,
+    title: "Upload",
+    description: "Drop in a PDF, PNG, JPG or WebP up to 10 MB. For PDFs, the first page is checked.",
+  },
+  {
+    icon: ScanSearch,
+    title: "Forensic scan",
+    description: "Error-level analysis looks for regions that were pasted in or edited after the certificate was issued.",
+  },
+  {
+    icon: FileSearch,
+    title: "Read the details",
+    description: "OCR and an AI model pull out the holder's name, the certificate ID and the issuer.",
+  },
+  {
+    icon: Globe,
+    title: "Confirm with issuer",
+    description: "We open the issuer's own verification page and check that the ID and name match.",
+  },
+];
 
-const StepCard: React.FC<StepCardProps> = ({
-  icon,
-  title,
-  description,
-  benefits,
-}) => (
-  <div className="relative rounded-2xl border border-slate-200 bg-white p-6 transition-all duration-300 ease-in-out hover:scale-105 hover:shadow-xl hover:border-orange-400 hover:bg-slate-50">
-    {/* Icon */}
-    <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
-      {icon}
-    </div>
-    {/* Title and Description */}
-    <h3 className="mb-2 text-xl font-semibold text-slate-900">{title}</h3>
-    <p className="mb-6 text-slate-600">{description}</p>
-    {/* Benefits List */}
-    <ul className="space-y-3">
-      {benefits.map((benefit, index) => (
-        <li key={index} className="flex items-center gap-3">
-          <div className="flex h-4 w-4 flex-shrink-0 items-center justify-center rounded-full bg-orange-100">
-            <div className="h-2 w-2 rounded-full bg-orange-600"></div>
-          </div>
-          <span className="text-sm text-slate-600">{benefit}</span>
-        </li>
-      ))}
-    </ul>
-  </div>
-);
-
-export const HowItWorks: React.FC<HowItWorksProps> = ({
-  className = "",
-  ...props
-}) => {
-  const stepsData = [
-    {
-      icon: <Upload className="h-6 w-6" />,
-      title: "Upload Certificate",
-      description:
-        "Upload your certificate as PDF or image. Our system supports all major certificate formats.",
-      benefits: [
-        "Drag & drop or click to upload",
-        "Supports PDF, PNG, JPG formats",
-        "Files up to 10MB",
-      ],
-    },
-    {
-      icon: <Shield className="h-6 w-6" />,
-      title: "AI Analysis",
-      description:
-        "We check the file for signs of tampering, read the certificate details, and look them up on the issuer's site.",
-      benefits: [
-        "Reads the name, ID and issuer from the document",
-        "Image-forensics checks for signs of editing",
-        "Automatic issuer verification",
-      ],
-    },
-    {
-      icon: <CheckCircle className="h-6 w-6" />,
-      title: "Get Results",
-      description:
-        "Receive a verdict with the supporting details, plus a shareable proof you can validate online.",
-      benefits: [
-        "Checked against the issuer's own verification page",
-        "Clear verified / unverified / flagged verdict",
-        "Detailed forensics report",
-      ],
-    },
-  ];
-
-  return (
-    <section
-      id="how-it-works"
-      className={`w-full bg-slate-50 py-16 sm:py-24 ${className}`}
-      {...props}
-    >
-      <div className="container mx-auto px-4">
-        {/* Section Header */}
-        <div className="mx-auto mb-16 max-w-4xl text-center">
-          <h2 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
-            How It Works
-          </h2>
-          <p className="mt-4 text-lg text-slate-600">
-            Our AI-powered system uses advanced technology to verify certificates instantly
-          </p>
-        </div>
-
-        {/* Step Indicators with Connecting Line */}
-        <div className="relative mx-auto mb-8 w-full max-w-4xl">
-          <div
-            aria-hidden="true"
-            className="absolute left-[16.6667%] top-1/2 h-0.5 w-[66.6667%] -translate-y-1/2 bg-slate-300"
-          ></div>
-          {/* Use grid to align numbers with the card grid below */}
-          <div className="relative grid grid-cols-3">
-            {stepsData.map((_, index) => (
-              <div
-                key={index}
-                className="flex h-10 w-10 items-center justify-center justify-self-center rounded-full bg-orange-600 text-white font-bold text-lg ring-4 ring-slate-50"
-              >
-                {index + 1}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Steps Grid */}
-        <div className="mx-auto grid max-w-4xl grid-cols-1 gap-8 md:grid-cols-3">
-          {stepsData.map((step, index) => (
-            <StepCard
-              key={index}
-              icon={step.icon}
-              title={step.title}
-              description={step.description}
-              benefits={step.benefits}
-            />
-          ))}
-        </div>
+export const HowItWorks: React.FC<HowItWorksProps> = ({ className = "", ...props }) => (
+  <section id="how-it-works" className={`bg-navy-900 py-20 text-paper sm:py-28 ${className}`} {...props}>
+    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="max-w-2xl">
+        <p className="eyebrow text-gold-400">How it works</p>
+        <h2 className="mt-3 font-display text-4xl font-semibold tracking-tight sm:text-5xl">
+          Four checks. One clear verdict.
+        </h2>
+        <p className="mt-4 text-lg text-navy-200">
+          A forged certificate has to fool every step. Most fail at the first or the last.
+        </p>
       </div>
-    </section>
-  );
-};
+
+      <ol className="mt-14 grid gap-px overflow-hidden rounded-2xl border border-navy-700 bg-navy-700 sm:grid-cols-2 lg:grid-cols-4">
+        {STEPS.map(({ icon: Icon, title, description }, i) => (
+          <li key={title} className="bg-navy-900 p-7">
+            <div className="flex items-center justify-between">
+              <Icon className="h-6 w-6 text-gold-400" aria-hidden />
+              <span className="font-display text-3xl text-navy-600">0{i + 1}</span>
+            </div>
+            <h3 className="mt-8 text-lg font-semibold text-white">{title}</h3>
+            <p className="mt-2 text-sm leading-relaxed text-navy-300">{description}</p>
+          </li>
+        ))}
+      </ol>
+
+      <div className="mt-10 grid gap-4 text-sm sm:grid-cols-3">
+        {[
+          ["Verified", "Clean scan and matched on the issuer's site.", "bg-verified-600"],
+          ["Unverified", "Couldn't be confirmed. Try the manual check.", "bg-warn-600"],
+          ["Flagged", "Signs of editing found. Don't rely on it.", "bg-danger-600"],
+        ].map(([label, text, dot]) => (
+          <div key={label} className="flex items-start gap-3 rounded-xl border border-navy-700 p-4">
+            <span className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${dot}`} aria-hidden />
+            <p>
+              <span className="font-semibold text-white">{label}.</span>{" "}
+              <span className="text-navy-300">{text}</span>
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+);

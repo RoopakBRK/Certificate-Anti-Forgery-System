@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { CheckCircle, User, Hash, Building, Link as LinkIcon, ExternalLink, Copy, Check, Info } from 'lucide-react';
+import { ExternalLink, Copy, Check, Info } from 'lucide-react';
 import { CertificateAnalysisResponse } from '@/types';
 import { safeHttpUrl, validationUrl } from '@/lib/utils';
+import Seal from '@/components/ui/Seal';
 
 interface VerifiedCertificateProps {
   data: CertificateAnalysisResponse;
@@ -16,6 +17,8 @@ export default function VerifiedCertificate({ data }: VerifiedCertificateProps) 
   const isIdOnly = data.verification.method?.startsWith('manual') ?? false;
   const issuer = data.extraction.issuer_name || data.extraction.issuer_org;
   const issuerLink = safeHttpUrl(data.verification.verification_url || data.extraction.issuer_url);
+  const forensicsLabel =
+    data.forensics.status === 'skipped' ? 'Not checked' : data.forensics.is_high_risk ? 'High risk' : 'No tampering found';
 
   const handleViewCertificate = () => {
     if (token) window.open(validationUrl(token), '_blank', 'noopener,noreferrer');
@@ -32,111 +35,69 @@ export default function VerifiedCertificate({ data }: VerifiedCertificateProps) 
     }
   };
 
+  const rows: [string, React.ReactNode][] = [];
+  if (data.extraction.candidate_name && !isIdOnly) rows.push(['Issued to', data.extraction.candidate_name]);
+  if (issuer) rows.push(['Issuer', issuer]);
+  if (data.extraction.certificate_id)
+    rows.push(['Certificate ID', <span key="id" className="break-all font-mono text-sm">{data.extraction.certificate_id}</span>]);
+  if (issuerLink)
+    rows.push([
+      'Issuer page',
+      <a key="url" href={issuerLink} target="_blank" rel="noopener noreferrer" className="break-all text-sm text-navy-700 underline underline-offset-4 hover:text-navy-900">
+        {issuerLink}
+      </a>,
+    ]);
+  rows.push(['Document integrity', forensicsLabel]);
+
   return (
-    <div className="w-full max-w-2xl mx-auto">
-      {/* Success Header */}
-      <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 mb-6 border border-green-200">
-        <div className="flex items-center gap-3 mb-3">
-          <CheckCircle className="w-8 h-8 text-green-600" />
-          <h2 className="text-2xl font-bold text-green-800">
-            {isIdOnly ? 'Certificate ID Confirmed' : 'Certificate Verified!'}
+    <div className="card mx-auto w-full max-w-2xl overflow-hidden">
+      {/* Verdict band */}
+      <div className="flex items-center gap-5 border-b border-verified-100 bg-verified-50 px-6 py-6 sm:px-8">
+        <Seal tone="verified" mark="check" size={64} className="shrink-0" label="Verified" />
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-verified-700">
+            {isIdOnly ? 'ID confirmed' : 'Verified'}
+          </p>
+          <h2 className="mt-1 font-display text-2xl font-semibold text-navy-900 sm:text-3xl">
+            {isIdOnly ? 'Certificate ID confirmed' : 'This certificate is genuine'}
           </h2>
+          <p className="mt-1 text-sm text-verified-800">{data.verification.message}</p>
         </div>
-        <p className="text-green-700">{data.verification.message}</p>
       </div>
 
-      {isIdOnly && (
-        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6 text-sm text-amber-800">
-          <Info className="w-5 h-5 shrink-0 mt-0.5" />
-          <p>
-            This ID exists on the issuer&apos;s site. Because it was checked manually, we did not check
-            the name on your document or scan the file for tampering.
-          </p>
-        </div>
-      )}
-
-      {/* Certificate Details */}
-      <div className="bg-white rounded-xl shadow-lg border border-gray-100 p-6 space-y-6">
-        
-        {data.extraction.candidate_name && !isIdOnly && (
-          <div className="flex items-start gap-3">
-            <User className="w-5 h-5 text-blue-600 mt-1" />
-            <div>
-              <p className="text-sm text-gray-500 font-medium">Candidate Name</p>
-              <p className="text-lg font-semibold text-gray-900">{data.extraction.candidate_name}</p>
-            </div>
+      <div className="px-6 py-6 sm:px-8">
+        {isIdOnly && (
+          <div className="mb-6 flex items-start gap-3 rounded-lg border border-warn-200 bg-warn-50 p-4 text-sm text-warn-800">
+            <Info className="mt-0.5 h-5 w-5 shrink-0" />
+            <p>
+              This ID exists on the issuer&apos;s site. Because it was checked manually, we did not check
+              the name on your document or scan the file for tampering.
+            </p>
           </div>
         )}
 
-        {data.extraction.certificate_id && (
-          <div className="flex items-start gap-3">
-            <Hash className="w-5 h-5 text-blue-600 mt-1" />
-            <div>
-              <p className="text-sm text-gray-500 font-medium">Certificate ID</p>
-              <p className="text-lg font-mono text-gray-900 break-all">{data.extraction.certificate_id}</p>
+        <dl className="divide-y divide-dashed divide-navy-100">
+          {rows.map(([label, value]) => (
+            <div key={label} className="grid gap-1 py-3.5 sm:grid-cols-[10rem_1fr] sm:gap-4">
+              <dt className="text-sm text-navy-500">{label}</dt>
+              <dd className={`font-medium text-navy-900 ${label === 'Issued to' ? 'font-display text-xl' : ''}`}>{value}</dd>
             </div>
-          </div>
-        )}
+          ))}
+        </dl>
 
-        {issuer && (
-          <div className="flex items-start gap-3">
-            <Building className="w-5 h-5 text-blue-600 mt-1" />
-            <div>
-              <p className="text-sm text-gray-500 font-medium">Issuing Organization</p>
-              <p className="text-lg font-semibold text-gray-900">{issuer}</p>
-            </div>
-          </div>
-        )}
-
-        {issuerLink && (
-          <div className="flex items-start gap-3">
-            <LinkIcon className="w-5 h-5 text-blue-600 mt-1" />
-            <div className="flex-1">
-              <p className="text-sm text-gray-500 font-medium">Verification URL</p>
-              <a 
-                href={issuerLink} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:text-blue-700 underline break-all"
-              >
-                {issuerLink}
-              </a>
-            </div>
-          </div>
-        )}
-
-        <div className="border-t border-gray-200"></div>
-
-        {/* Forensics Info */}
-        <div className="bg-gray-50 rounded-lg p-4">
-          <p className="text-sm font-medium text-gray-700 mb-2">Security Analysis</p>
-          <div className="space-y-1 text-sm text-gray-600">
-            <p>• Risk Level: <span className={`font-semibold ${data.forensics.is_high_risk ? 'text-red-600' : 'text-green-600'}`}>
-              {data.forensics.status === 'skipped' ? 'Not checked' : data.forensics.is_high_risk ? 'High Risk' : 'Low Risk'}
-            </span></p>
-            <p>• Status: <span className="font-semibold">{data.forensics.status}</span></p>
-          </div>
-        </div>
-
-        {/* Actions */}
         {token && (
-          <div className="space-y-3">
-            <button
-              onClick={handleViewCertificate}
-              className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-6 rounded-lg transition-all shadow-md hover:shadow-lg"
-            >
-              <ExternalLink className="w-5 h-5" />
-              View Validation Certificate
-            </button>
-            
-            <button
-              onClick={handleCopyLink}
-              className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-all shadow-md hover:shadow-lg"
-            >
-              {copied ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
-              {copied ? 'Link copied' : 'Copy verification link'}
-            </button>
-            <p className="text-xs text-gray-500 text-center">
+          <div className="mt-8 border-t border-navy-100 pt-6">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button onClick={handleViewCertificate} className="btn-primary">
+                <ExternalLink className="h-4 w-4" />
+                View signed report
+              </button>
+              <button onClick={handleCopyLink} className="btn-secondary">
+                {copied ? <Check className="h-4 w-4 text-verified-600" /> : <Copy className="h-4 w-4" />}
+                {copied ? 'Link copied' : 'Copy share link'}
+              </button>
+            </div>
+            <p className="mt-3 text-center text-xs text-navy-500">
               Anyone with this link can confirm the result is genuine. It contains the name and ID shown above, so share it deliberately.
             </p>
           </div>

@@ -1,59 +1,73 @@
-Category,Organization Name,Website URL,Verification URL
-Online Learning Platform,Coursera,https://www.coursera.org,https://www.coursera.org/verify/
-Online Learning Platform,edX,https://www.edx.org,https://courses.edx.org/certificates/
-Online Learning Platform,Udemy,https://www.udemy.com,https://www.udemy.com/certificate/
-Online Learning Platform,LinkedIn Learning,https://www.linkedin.com/learning,https://www.linkedin.com/learning/certificates/
-Online Learning Platform,FutureLearn,https://www.futurelearn.com,https://www.futurelearn.com/certificates/
-Online Learning Platform,Udacity,https://www.udacity.com,https://www.udacity.com/certificate/
-Online Learning Platform,Alison,https://alison.com,https://alison.com/cert/verify/
-Online Learning Platform,Great Learning,https://www.mygreatlearning.com,https://www.mygreatlearning.com/verify
-Online Learning Platform,Simplilearn,https://www.simplilearn.com,https://www.simplilearn.com/certificate-verification
-Online Learning Platform,Pluralsight,https://www.pluralsight.com,https://app.pluralsight.com/library/
-Online Learning Platform,Skillshare,https://www.skillshare.com,
-Online Learning Platform,MasterClass,https://www.masterclass.com,
-Online Learning Platform,Codecademy,https://www.codecademy.com,https://www.codecademy.com/profiles/
-Online Learning Platform,freeCodeCamp,https://www.freecodecamp.org,https://www.freecodecamp.org/certification/
-Online Learning Platform,SWAYAM,https://swayam.gov.in,https://swayam.gov.in/certificate_verification
-Online Learning Platform,NPTEL,https://nptel.ac.in,https://nptel.ac.in/noc/
-Online Learning Platform,OpenLearn,https://www.open.edu/openlearn,https://www.open.edu/openlearn/my-badges
-Online Learning Platform,Khan Academy,https://www.khanacademy.org,
-Online Learning Platform,upGrad,https://www.upgrad.com,
-Online Learning Platform,Shaw Academy,https://www.shawacademy.com,
-Online Learning Platform,Open Universities Australia,https://www.open.edu.au,
-Online Learning Platform,360Training,https://www.360training.com,https://www.360training.com/verify-certificate
-Online Learning Platform,CareerFoundry,https://careerfoundry.com,
-Online Learning Platform,Simpliaxis,https://www.simpliaxis.com,
-Online Learning Platform,Knowledgehut,https://www.knowledgehut.com,https://www.knowledgehut.com/verify-certificate
-Online Learning Platform,Cognitive Class (IBM),https://cognitiveclass.ai,https://cognitiveclass.ai/certificates/
-Online Learning Platform,W3Schools,https://www.w3schools.com,https://verify.w3schools.com/
-Company / Tech Provider,Google Skillshop,https://skillshop.withgoogle.com,https://skillshop.exceedlms.com/student/catalog
-Company / Tech Provider,IBM,https://www.ibm.com/training,https://www.credly.com/organizations/ibm/badges
-Company / Tech Provider,Microsoft,https://learn.microsoft.com,https://learn.microsoft.com/en-us/users/me/transcript
-Company / Tech Provider,AWS,https://aws.amazon.com/certification,https://aws.amazon.com/verification
-Company / Tech Provider,HubSpot Academy,https://academy.hubspot.com,https://app.hubspot.com/academy/
-Company / Tech Provider,Meta,https://www.facebook.com/business/learn,https://www.credly.com/organizations/meta/badges
-Company / Tech Provider,Adobe,https://learning.adobe.com,https://www.certmetrics.com/adobe/public/verification.aspx
-Company / Tech Provider,Salesforce Trailhead,https://trailhead.salesforce.com,https://trailhead.salesforce.com/en/credentials/verification
-Company / Tech Provider,Cisco,https://www.cisco.com,https://cp.certmetrics.com/cisco/en/public/verify/credential
-Company / Tech Provider,CompTIA,https://www.comptia.org,https://www.certmetrics.com/comptia/public/verification.aspx
-Company / Tech Provider,Oracle,https://education.oracle.com,https://catalog-education.oracle.com/pls/apex/f?p=1010:VERIFICATION
-Company / Tech Provider,SAP,https://training.sap.com,https://www.credly.com/organizations/sap/badges
-Company / Tech Provider,Palo Alto Networks,https://www.paloaltonetworks.com,https://www.certmetrics.com/paloalto/public/verification.aspx
-Company / Tech Provider,Semrush Academy,https://www.semrush.com/academy,https://www.semrush.com/academy/certificates/
-Company / Tech Provider,Apple,https://training.apple.com,https://training.apple.com/acrs
-Company / Tech Provider,Intel,https://www.intel.com,
-"Company / Tech Provider,Unity",https://learn.unity.com,https://www.credly.com/organizations/unity-technologies/badges,
-Company / Tech Provider,SAS,https://www.sas.com,https://www.certmetrics.com/sas/public/verification.aspx
-Company / Tech Provider,Tableau,https://www.tableau.com,https://www.credly.com/organizations/tableau/badges
-Company / Tech Provider,DeepLearning.AI,https://www.deeplearning.ai,
-Company / Tech Provider,PMI,https://www.pmi.org,https://certification.pmi.org/registry.aspx
-Company / Tech Provider,ISACA,https://www.isaca.org,https://www.isaca.org/credentialing/verify-a-certification
-Company / Tech Provider,(ISC)²,https://www.isc2.org,https://www.isc2.org/member-verification
-Company / Tech Provider,Red Hat,https://www.redhat.com,https://rhtapps.redhat.com/verify
-Company / Tech Provider,VMware,https://www.vmware.com,https://www.certmetrics.com/vmware/public/verification.aspx
-Gov / Non-Profit,WHO,https://www.who.int,https://openwho.org/verify
-Gov / Non-Profit,Linux Foundation,https://www.linuxfoundation.org,https://training.linuxfoundation.org/verification/
-Gov / Non-Profit,British Council,https://www.britishcouncil.org,https://www.britishcouncil.org/education/exams/results
-Gov / Non-Profit,ACCA,https://www.accaglobal.com,https://www.accaglobal.com/gb/en/member/find-a-member.html
-Gov / Non-Profit,CIMA,https://www.cimaglobal.com,https://www.cimaglobal.com/Members/Member-search/
-Gov / Non-Profit,UNICEF,https://www.unicef.org,https://agora.unicef.org/
+Category,Organization Name,Aliases,Website URL,Verification URL,URL Patterns,ID Regex,ID Example,Verification Type,Notes
+Online Learning Platform,Coursera,Coursera Project Network|Google Career Certificates|Meta Professional Certificate|IBM Professional Certificate,https://www.coursera.org,https://www.coursera.org/verify/,https://www.coursera.org/verify/{id} ; https://www.coursera.org/account/accomplishments/verify/{id} ; https://www.coursera.org/verify/specialization/{id} ; https://www.coursera.org/verify/professional-cert/{id},"[A-Z0-9]{10,14}",ALS76DHQNMVZ,direct,"Course, specialization and professional certificates share the same 12-character code format. The certificate prints ""Verify at coursera.org/verify/<code>""."
+Online Learning Platform,Udemy,ude.my,https://www.udemy.com,https://www.udemy.com/certificate/,https://www.udemy.com/certificate/{id} ; https://ude.my/{id},UC-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12},UC-9ba43c6a-3983-495c-beb2-329801af4557,direct,"Certificate number printed top-right in light grey; ignore the 4-digit ""Reference Number""."
+Online Learning Platform,edX,HarvardX|MITx|BerkeleyX|IBM SkillsNetwork edX,https://www.edx.org,https://courses.edx.org/certificates/,https://courses.edx.org/certificates/{id} ; https://credentials.edx.org/credentials/{id}/,[0-9a-f]{32},4f7e9d2a1b3c4d5e6f708192a3b4c5d6,direct,Course certificates live on courses.edx.org; program (MicroMasters / XSeries / Professional) certificates on credentials.edx.org.
+Online Learning Platform,LinkedIn Learning,Lynda.com,https://www.linkedin.com/learning,https://www.linkedin.com/learning/certificates/,https://www.linkedin.com/learning/certificates/{id},[0-9a-f]{64},,direct,Certificate ID is a 64-character hex string shown in the share link.
+Online Learning Platform,FutureLearn,,https://www.futurelearn.com,https://www.futurelearn.com/certificates/,https://www.futurelearn.com/certificates/{id},"[a-z0-9]{8,12}",,direct,Digital Certificates of Achievement have a public URL.
+Online Learning Platform,Udacity,Udacity Nanodegree,https://www.udacity.com,https://graduation.udacity.com/confirm/,https://graduation.udacity.com/confirm/{id} ; https://confirm.udacity.com/{id},[A-Z0-9]{8},5AJRAHAG,direct,Nanodegree graduation certificates; older ones use confirm.udacity.com.
+Online Learning Platform,NPTEL,SWAYAM NPTEL|NPTEL Online Certification,https://nptel.ac.in,https://nptel.ac.in/noc/E_Certificate/,https://nptel.ac.in/noc/E_Certificate/{id} ; https://archive.nptel.ac.in/noc/Ecertificate/?q={id} ; https://internalapp.nptel.ac.in/noc/Ecertificate/?q={id},"NPTEL\d{2}[A-Z]{2,4}\d{1,4}S[0-9A-Z]{8,}",NPTEL25CS110S46360038410384681,direct,"Roll/certificate number starts with NPTEL, then year, discipline code and course number."
+Online Learning Platform,Cognitive Class (IBM),Cognitive Class|CognitiveClass.ai|Big Data University,https://cognitiveclass.ai,https://courses.cognitiveclass.ai/certificates/,https://courses.cognitiveclass.ai/certificates/{id},[0-9a-f]{32},ee7dd4082ab3496dbd2fd850b9ac5be6,direct,Open edX based; same 32-hex format as edX.
+Online Learning Platform,W3Schools,,https://www.w3schools.com,https://verify.w3schools.com/,https://verify.w3schools.com/{id},[0-9A-Z]{10},,direct,The certificate prints its verify.w3schools.com link.
+Online Learning Platform,Great Learning,Great Learning Academy|MyGreatLearning,https://www.mygreatlearning.com,https://verify.mygreatlearning.com/,https://verify.mygreatlearning.com/{id},[A-Z0-9]{8},XRCAYQFW,direct,"Free Academy certificates print ""To verify this certificate visit verify.mygreatlearning.com/<code>""."
+Online Learning Platform,freeCodeCamp,,https://www.freecodecamp.org,https://www.freecodecamp.org/certification/,https://www.freecodecamp.org/certification/{id},"[A-Za-z0-9_-]{3,40}/[a-z0-9-]{5,80}",username/responsive-web-design,direct,"The ""ID"" is <username>/<certification-slug> as printed in the verify URL."
+Online Learning Platform,DataCamp,,https://www.datacamp.com,https://www.datacamp.com/statement-of-accomplishment/,https://www.datacamp.com/statement-of-accomplishment/course/{id} ; https://www.datacamp.com/statement-of-accomplishment/track/{id},[0-9a-f]{40},,direct,Statements of accomplishment (course or track) have a 40-hex public ID.
+Online Learning Platform,HackerRank,,https://www.hackerrank.com,https://www.hackerrank.com/certificates/,https://www.hackerrank.com/certificates/{id},[0-9a-f]{12},,direct,Skill certificates print a verification link / QR code.
+Online Learning Platform,Kaggle,Kaggle Learn,https://www.kaggle.com/learn,https://www.kaggle.com/learn/certification/,https://www.kaggle.com/learn/certification/{id},"[A-Za-z0-9_-]{3,40}/[a-z0-9-]{3,80}",username/intro-to-machine-learning,direct,"The ""ID"" is <username>/<course-slug>."
+Online Learning Platform,Sololearn,SoloLearn,https://www.sololearn.com,https://www.sololearn.com/certificates/,https://www.sololearn.com/certificates/{id} ; https://www.sololearn.com/Certificate/{id}/pdf,"(?:C[CT]-[A-Z0-9]{8}|\d{4}-\d{5,8})",CT-ABCD1234,direct,Newer certificates use CC-/CT- codes; older ones use NNNN-NNNNNNN.
+Online Learning Platform,DeepLearning.AI,deeplearning.ai,https://www.deeplearning.ai,https://learn.deeplearning.ai/accomplishments/,https://learn.deeplearning.ai/accomplishments/{id},[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12},,direct,Short-course accomplishments; specialization certificates are issued through Coursera.
+Online Learning Platform,NVIDIA Deep Learning Institute,NVIDIA DLI|NVIDIA,https://www.nvidia.com/en-us/training/,https://courses.nvidia.com/certificates/,https://courses.nvidia.com/certificates/{id}/ ; https://learn.nvidia.com/certificates?id={id},[0-9a-f]{32},839732c9fe4d4b8da41e330e8c31a39c,direct,DLI course certificates. NVIDIA professional certifications are Credly badges.
+Online Learning Platform,Alison,,https://alison.com,https://alison.com/about/certification,,,,lookup,Purchased certificates carry a QR code that opens the verification page on alison.com.
+Online Learning Platform,Simplilearn,Simplilearn SkillUp,https://www.simplilearn.com,https://verify.simplilearn.com/,,,,lookup,Master's / PGP certificates issued after 15 Jul 2020: search by credential ID or name.
+Online Learning Platform,Infosys Springboard,Infosys Wingspan|Springboard,https://infyspringboard.onwingspan.com,https://verify.onwingspan.com/,,,,lookup,Scan the certificate QR code or enter the certificate ID on verify.onwingspan.com.
+Online Learning Platform,Internshala Trainings,Internshala,https://trainings.internshala.com,https://trainings.internshala.com/verify_certificate,,,,lookup,Enter the certificate number on the verification form (internships: internshala.com/verify_certificate).
+Online Learning Platform,Pluralsight,,https://www.pluralsight.com,,,,,lookup,No public verification page.
+Online Learning Platform,Skillshare,,https://www.skillshare.com,,,,,lookup,Does not issue verifiable certificates.
+Online Learning Platform,MasterClass,,https://www.masterclass.com,,,,,lookup,Does not issue verifiable certificates.
+Online Learning Platform,Codecademy,,https://www.codecademy.com,,,,,lookup,Certificates are shown on the learner's public profile.
+Online Learning Platform,SWAYAM,,https://swayam.gov.in,https://swayam.gov.in,,,,lookup,Most SWAYAM exam certificates are issued by NPTEL or the course's national coordinator.
+Online Learning Platform,OpenLearn,The Open University,https://www.open.edu/openlearn,https://www.open.edu/openlearn/my-badges,,,,lookup,Statements of participation / badges from the learner's profile.
+Online Learning Platform,Khan Academy,,https://www.khanacademy.org,,,,,lookup,Does not issue certificates.
+Online Learning Platform,upGrad,,https://www.upgrad.com,,,,,lookup,Verification is on request via upGrad support.
+Online Learning Platform,Shaw Academy,,https://www.shawacademy.com,,,,,lookup,
+Online Learning Platform,Open Universities Australia,,https://www.open.edu.au,,,,,lookup,
+Online Learning Platform,360Training,,https://www.360training.com,https://www.360training.com/verify-certificate,,,,lookup,
+Online Learning Platform,CareerFoundry,,https://careerfoundry.com,,,,,lookup,
+Online Learning Platform,Simpliaxis,,https://www.simpliaxis.com,,,,,lookup,
+Online Learning Platform,Knowledgehut,KnowledgeHut upGrad,https://www.knowledgehut.com,https://www.knowledgehut.com/verify-certificate,,,,lookup,
+Credential Platform,Credly,Acclaim|Pearson Credly,https://www.credly.com,https://www.credly.com/badges/,https://www.credly.com/badges/{id},[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12},,direct,"Hosts badges for IBM, AWS, Cisco, Google Cloud, Microsoft (legacy), Oracle, SAP, Tableau, Red Hat, Linux Foundation, MongoDB, GitHub and many more."
+Credential Platform,Accredible,Credential.net,https://www.accredible.com,https://www.credential.net/,https://www.credential.net/{id},"(?:\d{7,9}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})",,direct,Used by many universities and bootcamps.
+Credential Platform,Certifier,Credsverse|certifier.io,https://certifier.io,https://credsverse.com/credentials/,https://credsverse.com/credentials/{id},[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12},,direct,
+Credential Platform,Canvas Credentials,Badgr|Parchment,https://www.instructure.com/canvas/credentials,https://badges.parchment.com/public/assertions/,https://badges.parchment.com/public/assertions/{id} ; https://badgr.com/public/assertions/{id},,,direct,Formerly Badgr; used by e.g. the Postman Student programme.
+Company / Tech Provider,Google Skillshop,Skillshop|Google Ads Certification|Google Analytics Certification|Google Digital Garage,https://skillshop.withgoogle.com,https://skillshop.exceedlms.com/student/award/,https://skillshop.exceedlms.com/student/award/{id},,,direct,Google Digital Garage validation was retired and folded into Skillshop.
+Company / Tech Provider,Google Cloud Skills Boost,Google Cloud|Qwiklabs,https://www.cloudskillsboost.google,https://www.cloudskillsboost.google/public_profiles/,https://www.cloudskillsboost.google/public_profiles/{id},[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12},,direct,Skill badges appear on the public profile; Google Cloud certifications are Credly badges.
+Company / Tech Provider,IBM,IBM SkillsBuild|IBM Training,https://www.ibm.com/training,https://www.credly.com/organizations/ibm/badges,https://www.credly.com/badges/{id},[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12},,direct,IBM badges are issued on Credly.
+Company / Tech Provider,Microsoft,Microsoft Learn|Microsoft Certified,https://learn.microsoft.com,https://learn.microsoft.com/en-us/credentials/certifications/cred-share-validate,,,,lookup,Share links look like learn.microsoft.com/api/credentials/share/<locale>/<user>/<id>?sharingId=...; the printed/QR link is checked directly.
+Company / Tech Provider,AWS,Amazon Web Services|AWS Certified,https://aws.amazon.com/certification,https://aws.amazon.com/verification,https://www.credly.com/badges/{id},[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12},,direct,Badges on Credly; validation numbers can be checked at aws.amazon.com/verification.
+Company / Tech Provider,HubSpot Academy,HubSpot,https://academy.hubspot.com,https://academy.hubspot.com/verification,,[0-9a-f]{32},93006c20260f4c788fc6c73a73503b84,lookup,Genuine achievement links start with https://app.hubspot.com/academy/achievements; codes can be checked at academy.hubspot.com/verification.
+Company / Tech Provider,Meta,Meta Blueprint|Facebook,https://www.facebook.com/business/learn,https://www.credly.com/organizations/meta/badges,https://www.credly.com/badges/{id},[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12},,direct,Meta Blueprint badges on Credly; Meta professional certificates on Coursera.
+Company / Tech Provider,Adobe,,https://learning.adobe.com,https://www.certmetrics.com/adobe/public/verification.aspx,,,,lookup,
+Company / Tech Provider,Salesforce Trailhead,Salesforce,https://trailhead.salesforce.com,https://trailhead.salesforce.com/en/credentials/verification,,,,lookup,Search by name / email on the verification page.
+Company / Tech Provider,Cisco,Cisco Networking Academy|NetAcad,https://www.cisco.com,https://cp.certmetrics.com/cisco/en/public/verify/credential,https://www.credly.com/badges/{id},[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12},,direct,NetAcad and certification badges on Credly.
+Company / Tech Provider,CompTIA,,https://www.comptia.org,https://www.certmetrics.com/comptia/public/verification.aspx,,,,lookup,
+Company / Tech Provider,Oracle,Oracle University,https://education.oracle.com,https://catalog-education.oracle.com/pls/apex/f?p=1010:VERIFICATION,https://www.credly.com/badges/{id},[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12},,direct,Newer Oracle certifications are Credly badges.
+Company / Tech Provider,SAP,,https://training.sap.com,https://www.credly.com/organizations/sap/badges,https://www.credly.com/badges/{id},[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12},,direct,
+Company / Tech Provider,Palo Alto Networks,,https://www.paloaltonetworks.com,https://www.certmetrics.com/paloalto/public/verification.aspx,,,,lookup,
+Company / Tech Provider,Semrush Academy,Semrush,https://www.semrush.com/academy,https://www.semrush.com/academy/certificates/,,,,lookup,
+Company / Tech Provider,Apple,,https://training.apple.com,https://training.apple.com/acrs,,,,lookup,
+Company / Tech Provider,Intel,,https://www.intel.com,,,,,lookup,
+Company / Tech Provider,Unity,Unity Technologies,https://learn.unity.com,https://www.credly.com/organizations/unity-technologies/badges,https://www.credly.com/badges/{id},[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12},,direct,
+Company / Tech Provider,SAS,,https://www.sas.com,https://www.certmetrics.com/sas/public/verification.aspx,,,,lookup,
+Company / Tech Provider,Tableau,,https://www.tableau.com,https://www.credly.com/organizations/tableau/badges,https://www.credly.com/badges/{id},[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12},,direct,
+Company / Tech Provider,MongoDB,MongoDB University,https://learn.mongodb.com,https://www.credly.com/organizations/mongodb/badges,https://www.credly.com/badges/{id},[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12},,direct,
+Company / Tech Provider,GitHub,GitHub Certifications,https://resources.github.com/learn/certifications/,https://www.credly.com/organizations/github/badges,https://www.credly.com/badges/{id},[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12},,direct,
+Company / Tech Provider,Red Hat,,https://www.redhat.com,https://rhtapps.redhat.com/verify,https://rhtapps.redhat.com/verify?certId={id},\d{3}-\d{3}-\d{3},,direct,Certification numbers look like 123-456-789.
+Company / Tech Provider,VMware,Broadcom VMware,https://www.vmware.com,https://www.certmetrics.com/vmware/public/verification.aspx,,,,lookup,
+Company / Tech Provider,PMI,Project Management Institute,https://www.pmi.org,https://certification.pmi.org/registry.aspx,,,,lookup,Search the PMI certification registry by name.
+Company / Tech Provider,ISACA,,https://www.isaca.org,https://www.isaca.org/credentialing/verify-a-certification,,,,lookup,
+Company / Tech Provider,(ISC)²,ISC2,https://www.isc2.org,https://www.isc2.org/member-verification,,,,lookup,
+Gov / Non-Profit,WHO,OpenWHO|World Health Organization,https://www.who.int,https://openwho.org/verify/,https://openwho.org/verify/{id},,,direct,OpenWHO records of achievement print an openwho.org/verify/<code> link.
+Gov / Non-Profit,Linux Foundation,LF Training|The Linux Foundation,https://www.linuxfoundation.org,https://training.linuxfoundation.org/certification/verify/,https://www.credly.com/badges/{id},[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12},,direct,Badges on Credly; LF-xxxx certificate numbers via the verify form.
+Gov / Non-Profit,British Council,,https://www.britishcouncil.org,https://www.britishcouncil.org/education/exams/results,,,,lookup,
+Gov / Non-Profit,ACCA,,https://www.accaglobal.com,https://www.accaglobal.com/gb/en/member/find-a-member.html,,,,lookup,
+Gov / Non-Profit,CIMA,,https://www.cimaglobal.com,https://www.cimaglobal.com/Members/Member-search/,,,,lookup,
+Gov / Non-Profit,UNICEF,UNICEF Agora,https://www.unicef.org,https://agora.unicef.org/,,,,lookup,

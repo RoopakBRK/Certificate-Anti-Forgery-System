@@ -2,23 +2,25 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ShieldCheck, Menu, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
+import Seal from '@/components/ui/Seal';
+import UserMenu from '@/components/auth/UserMenu';
 
 const NAV_ITEMS = [
-  { label: 'Home', href: '/' },
   { label: 'Verify', href: '/#verify' },
-  { label: 'How It Works', href: '/#how-it-works' },
+  { label: 'How it works', href: '/#how-it-works' },
+  { label: 'Issuers', href: '/issuers' },
+  { label: 'Pricing', href: '/#pricing' },
+  { label: 'FAQ', href: '/#faq' },
 ];
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
-  // Handle scroll effect for glassmorphism
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
-    };
+    const handleScroll = () => setScrolled(window.scrollY > 12);
+    handleScroll();
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
@@ -32,90 +34,76 @@ export default function Navbar() {
   }, [isOpen]);
 
   return (
-    <nav 
+    <nav
       aria-label="Main"
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled 
-          ? 'bg-slate-900/80 backdrop-blur-md border-b border-slate-700 shadow-lg py-2' 
-          : 'bg-transparent py-4'
+      className={`fixed inset-x-0 top-0 z-50 transition-colors duration-300 ${
+        scrolled || isOpen ? 'border-b border-navy-100 bg-paper/90 backdrop-blur-md' : 'bg-transparent'
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="bg-orange-600 p-1.5 rounded-lg group-hover:bg-orange-500 transition-colors">
-              <ShieldCheck className="w-10 h-10 text-white" />
-            </div>
-            <span className={`text-xl font-bold tracking-tight transition-colors ${
-              scrolled ? 'text-white' : 'text-slate-900'
-            }`}>
-              CAFS<span className="text-orange-600"> · Anti Forgery</span>
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex h-16 items-center justify-between">
+          {/* Wordmark */}
+          <Link href="/" className="flex items-center gap-2.5" aria-label="CAFS home">
+            <Seal size={34} />
+            <span className="flex flex-col leading-none">
+              <span className="font-display text-xl font-semibold tracking-tight text-navy-900">CAFS</span>
+              <span className="hidden text-[10px] font-medium uppercase tracking-[0.16em] text-navy-500 sm:block">
+                Certificate Anti Forgery System
+              </span>
             </span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
+          {/* Desktop navigation */}
+          <div className="hidden items-center gap-8 md:flex">
             {NAV_ITEMS.map((item) => (
-              <Link 
+              <Link
                 key={item.label}
-                href={item.href} 
-                className={`text-sm font-medium transition-colors hover:text-orange-500 ${
-                  scrolled ? 'text-slate-300' : 'text-slate-700'
-                }`}
+                href={item.href}
+                className="text-sm font-medium text-navy-600 transition-colors hover:text-navy-900"
               >
                 {item.label}
               </Link>
             ))}
-            
-            <Link 
-              href="/#verify" 
-              className="px-5 py-2.5 rounded-full bg-orange-600 text-white text-sm font-semibold hover:bg-orange-700 transition-all shadow-md hover:shadow-orange-500/20"
-            >
-              Verify Now
+            <UserMenu />
+            <Link href="/#verify" className="btn-primary px-5 py-2.5">
+              Verify now
             </Link>
           </div>
 
-          {/* Mobile Menu Button */}
+          {/* Mobile menu button */}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden p-2 rounded-lg hover:bg-white/10 transition-colors"
+            className="rounded-lg p-2 text-navy-900 transition-colors hover:bg-navy-50 md:hidden"
             aria-label="Toggle menu"
             aria-expanded={isOpen}
             aria-controls="mobile-menu"
           >
-            {isOpen ? (
-              <X className={`w-6 h-6 ${scrolled ? 'text-white' : 'text-slate-900'}`} />
-            ) : (
-              <Menu className={`w-6 h-6 ${scrolled ? 'text-white' : 'text-slate-900'}`} />
-            )}
+            {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
         </div>
+      </div>
 
-        {/* Mobile Navigation */}
-        {isOpen && (
-          <div id="mobile-menu" className="md:hidden absolute top-full left-0 right-0 bg-slate-900 border-t border-slate-800 shadow-xl p-4 space-y-3">
-            {NAV_ITEMS.map((item) => (
-              <Link 
-                key={item.label}
-                href={item.href}
-                className="block px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-orange-500 rounded-lg transition-colors font-medium"
-                onClick={() => setIsOpen(false)}
-              >
-                {item.label}
-              </Link>
-            ))}
-             <Link 
-              href="/#verify" 
-              className="block w-full text-center px-4 py-3 bg-orange-600 text-white rounded-lg font-bold hover:bg-orange-700 transition-colors"
+      {/* Mobile navigation */}
+      {isOpen && (
+        <div id="mobile-menu" className="space-y-1 border-t border-navy-100 bg-paper px-4 pb-4 pt-2 md:hidden">
+          {NAV_ITEMS.map((item) => (
+            <Link
+              key={item.label}
+              href={item.href}
+              className="block rounded-lg px-3 py-3 font-medium text-navy-700 transition-colors hover:bg-navy-50"
               onClick={() => setIsOpen(false)}
             >
-              Verify Now
+              {item.label}
             </Link>
+          ))}
+          <div className="px-3 py-3">
+            <UserMenu onNavigate={() => setIsOpen(false)} />
           </div>
-        )}
-      </div>
+          <Link href="/#verify" className="btn-primary mt-2 w-full" onClick={() => setIsOpen(false)}>
+            Verify now
+          </Link>
+        </div>
+      )}
     </nav>
   );
 }

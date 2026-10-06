@@ -16,6 +16,9 @@ _BLOCK_MARKERS = (
     "just a moment", "enable javascript", "checking your browser",
     "unusual traffic", "403 forbidden", "sign in to continue", "log in to continue",
     "please log in", "please sign in",
+    # Cloudflare managed challenge (2025+ wording)
+    "performing security verification", "security service to protect against malicious bots",
+    "verifies you are not a bot",
 )
 
 

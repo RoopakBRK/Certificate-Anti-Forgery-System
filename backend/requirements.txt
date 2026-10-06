@@ -10,7 +10,10 @@ qrcode
 ollama
 opencv-python
 numpy
-mistral 
+mistral
+mistralai
+httpx
+python-dotenv
 beautifulsoup4 
 rapidfuzz 
 playwright

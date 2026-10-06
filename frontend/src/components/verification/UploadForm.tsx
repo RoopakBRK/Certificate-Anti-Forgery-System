@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { UploadCloud, File as FileIcon, Loader2, XCircle } from 'lucide-react';
+import { UploadCloud, File as FileIcon, Loader2, XCircle, Check, ShieldCheck } from 'lucide-react';
 import { verificationService } from '@/services/api';
 
 const MAX_SIZE_MB = 10; // keep in sync with backend MAX_UPLOAD_BYTES
@@ -91,83 +91,114 @@ export default function UploadForm() {
   };
 
   return (
-    <div className="w-full max-w-md mx-auto bg-white rounded-xl shadow-lg border border-slate-200 p-6">
-      
-      {/* Upload Area */}
-      <div
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        className={`
-          relative border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200 cursor-pointer
-          ${isDragging ? 'border-orange-500 bg-orange-50' : 'border-slate-300 hover:border-slate-400'}
-          ${file ? 'bg-slate-50' : ''}
-        `}
-      >
-        <input
-          ref={inputRef}
-          type="file"
-          id="certificate-upload"
-          aria-label="Upload a certificate (PDF, PNG, JPG or WebP)"
-          aria-describedby={error ? 'upload-error' : undefined}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-          onChange={handleFileChange}
-          accept=".pdf,.png,.jpg,.jpeg,.webp"
-          disabled={isUploading}
-        />
+    <div className="card w-full p-6 sm:p-8">
+      {isUploading ? (
+        <ProgressStages />
+      ) : (
+        <>
+          {/* Upload area */}
+          <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className={`relative cursor-pointer rounded-xl border-2 border-dashed p-10 text-center transition-colors ${
+              isDragging
+                ? 'border-navy-500 bg-navy-50'
+                : file
+                  ? 'border-verified-200 bg-verified-50/50'
+                  : 'border-navy-200 hover:border-navy-400 hover:bg-navy-50/50'
+            }`}
+          >
+            <input
+              ref={inputRef}
+              type="file"
+              id="certificate-upload"
+              aria-label="Upload a certificate (PDF, PNG, JPG or WebP)"
+              aria-describedby={error ? 'upload-error' : undefined}
+              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+              onChange={handleFileChange}
+              accept=".pdf,.png,.jpg,.jpeg,.webp"
+              disabled={isUploading}
+            />
 
-        <div className="flex flex-col items-center justify-center space-y-3 pointer-events-none">
-          {file ? (
-            <>
-              <FileIcon className="w-10 h-10 text-orange-600" />
-              <div className="text-sm text-slate-700 font-medium truncate max-w-[200px]">
-                {file.name}
-              </div>
-              <p className="text-xs text-slate-500">
-                {(file.size / 1024 / 1024).toFixed(2)} MB
-              </p>
-            </>
-          ) : (
-            <>
-              <UploadCloud className="w-10 h-10 text-slate-400" />
-              <div className="text-slate-600">
-                <span className="font-semibold text-orange-600">Click to upload</span> or drag and drop
-              </div>
-              <p className="text-xs text-slate-500">PDF, PNG, JPG, WebP (Max {MAX_SIZE_MB}MB). For PDFs, only the first page is checked.</p>
-            </>
+            <div className="pointer-events-none flex flex-col items-center justify-center gap-3">
+              {file ? (
+                <>
+                  <FileIcon className="h-10 w-10 text-verified-600" />
+                  <div className="max-w-[240px] truncate text-sm font-medium text-navy-900">{file.name}</div>
+                  <p className="text-xs text-navy-500">{(file.size / 1024 / 1024).toFixed(2)} MB · click to change</p>
+                </>
+              ) : (
+                <>
+                  <UploadCloud className="h-10 w-10 text-navy-300" />
+                  <div className="text-navy-700">
+                    <span className="font-semibold text-navy-900 underline underline-offset-4">Choose a file</span> or drag it here
+                  </div>
+                  <p className="text-xs text-navy-500">
+                    PDF, PNG, JPG or WebP, up to {MAX_SIZE_MB} MB. For PDFs, the first page is checked.
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Error message */}
+          {error && (
+            <div id="upload-error" role="alert" className="mt-4 flex items-start gap-2 rounded-lg border border-danger-200 bg-danger-50 p-3 text-sm text-danger-700">
+              <XCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              {error}
+            </div>
           )}
-        </div>
-      </div>
 
-      {/* Error Message */}
-      {error && (
-        <div id="upload-error" role="alert" className="mt-4 p-3 bg-red-50 text-red-600 text-sm rounded-md flex items-center gap-2 border border-red-200">
-          <XCircle className="w-4 h-4" />
-          {error}
-        </div>
+          <button onClick={handleVerification} disabled={!file} className="btn-primary mt-6 w-full py-3.5 text-base">
+            <ShieldCheck className="h-5 w-5" />
+            Verify certificate
+          </button>
+          <p className="mt-3 text-center text-xs text-navy-400">Your file is checked in memory and never stored.</p>
+        </>
       )}
+    </div>
+  );
+}
 
-      {/* Action Button */}
-      <button
-        onClick={handleVerification}
-        disabled={!file || isUploading}
-        className={`
-          w-full mt-6 flex items-center justify-center py-3 px-4 rounded-lg font-semibold text-white transition-all
-          ${!file || isUploading 
-            ? 'bg-slate-300 cursor-not-allowed' 
-            : 'bg-orange-600 hover:bg-orange-700 shadow-md hover:shadow-lg active:scale-95'
-          }
-        `}
-      >
-        {isUploading ? (
-          <>
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            Processing...
-          </>
-        ) : (
-          'Verify Certificate'
-        )}
-      </button>
+// The server does these steps in order; timings are typical, not reported live.
+const STAGES = [
+  { label: 'Scanning for signs of editing', after: 0 },
+  { label: 'Reading name, ID and issuer', after: 4 },
+  { label: "Checking the issuer's verification page", after: 9 },
+  { label: 'Preparing your report', after: 20 },
+];
+
+function ProgressStages() {
+  const [elapsed, setElapsed] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setElapsed((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const current = STAGES.reduce((idx, st, i) => (elapsed >= st.after ? i : idx), 0);
+
+  return (
+    <div role="status" aria-live="polite" className="py-4">
+      <p className="font-display text-2xl font-semibold text-navy-900">Verifying your certificate</p>
+      <p className="mt-1 text-sm text-navy-500">This usually takes 15–30 seconds. Please keep this page open.</p>
+      <ol className="mt-8 space-y-4">
+        {STAGES.map((st, i) => {
+          const done = i < current;
+          const active = i === current;
+          return (
+            <li key={st.label} className="flex items-center gap-3 text-sm">
+              <span
+                className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${
+                  done ? 'bg-verified-600 text-white' : active ? 'bg-navy-900 text-white' : 'bg-navy-100 text-navy-400'
+                }`}
+              >
+                {done ? <Check className="h-3.5 w-3.5" /> : active ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <span className="text-[10px] font-semibold">{i + 1}</span>}
+              </span>
+              <span className={done || active ? 'font-medium text-navy-900' : 'text-navy-400'}>{st.label}</span>
+            </li>
+          );
+        })}
+      </ol>
     </div>
   );
 }

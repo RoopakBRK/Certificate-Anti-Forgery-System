@@ -1,6 +1,7 @@
 import React from 'react';
-import { XCircle, RotateCcw, Home } from 'lucide-react';
+import { RotateCcw, Home } from 'lucide-react';
 import Link from 'next/link';
+import Seal from '@/components/ui/Seal';
 
 interface CertificateNotFoundProps {
   message?: string;
@@ -9,41 +10,36 @@ interface CertificateNotFoundProps {
 
 export default function CertificateNotFound({ message, onRetry }: CertificateNotFoundProps) {
   return (
-    <div className="bg-white rounded-xl shadow-lg border border-red-100 p-8 md:p-12 text-center max-w-2xl mx-auto">
-      <div className="mb-6 inline-flex p-4 bg-red-50 rounded-full">
-        <XCircle className="w-16 h-16 text-red-500" />
+    <div className="card mx-auto w-full max-w-2xl overflow-hidden">
+      <div className="flex items-center gap-5 border-b border-warn-100 bg-warn-50 px-6 py-6 sm:px-8">
+        <Seal tone="warn" mark="question" size={64} className="shrink-0" label="Unverified" />
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-warn-700">Unverified</p>
+          <h2 className="mt-1 font-display text-2xl font-semibold text-navy-900 sm:text-3xl">
+            We couldn&apos;t confirm this certificate
+          </h2>
+        </div>
       </div>
-      
-      <h2 className="text-3xl font-bold text-slate-900 mb-4">
-        We could not verify this certificate
-      </h2>
-      
-      <p className="text-slate-600 text-lg mb-4 leading-relaxed">
-        {message ||
-          'The Certificate ID or link may be incorrect, or the certificate may not be publicly accessible on the issuer\'s site.'}
-      </p>
-      <p className="text-slate-500 text-sm mb-8">
-        Check the details and try again, or upload a different file.
-      </p>
-
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-        {onRetry && (
-          <button 
-            onClick={onRetry}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg transition-colors"
-          >
-            <RotateCcw className="w-5 h-5" />
-            Try Again
-          </button>
-        )}
-        
-        <Link 
-          href="/"
-          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-md hover:shadow-lg"
-        >
-          <Home className="w-5 h-5" />
-          Back to Home
-        </Link>
+      <div className="px-6 py-6 sm:px-8">
+        <p className="leading-relaxed text-navy-700">
+          {message ||
+            "The certificate ID or link may be incorrect, or the certificate may not be publicly visible on the issuer's site."}
+        </p>
+        <p className="mt-2 text-sm text-navy-500">
+          Unverified doesn&apos;t mean fake. Check the details and try again, or upload a different file.
+        </p>
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+          {onRetry && (
+            <button onClick={onRetry} className="btn-primary">
+              <RotateCcw className="h-4 w-4" />
+              Enter the ID manually
+            </button>
+          )}
+          <Link href="/#verify" className="btn-secondary">
+            <Home className="h-4 w-4" />
+            Upload another file
+          </Link>
+        </div>
       </div>
     </div>
   );

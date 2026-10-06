@@ -19,6 +19,13 @@ class Config:
     MISTRAL_API_KEY: str = os.getenv("MISTRAL_API_KEY", "")
     # Chat model used to structure OCR text; must be available on your Mistral tier
     MISTRAL_MODEL: str = os.getenv("MISTRAL_MODEL") or "mistral-small-latest"
+
+    # Which LLM structures the OCR text: groq (default) | huggingface | mistral
+    EXTRACTION_PROVIDER: str = (os.getenv("EXTRACTION_PROVIDER") or "groq").lower()
+    GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
+    GROQ_MODEL: str = os.getenv("GROQ_MODEL") or "openai/gpt-oss-120b"
+    HF_TOKEN: str = os.getenv("HF_TOKEN", "")
+    HF_MODEL: str = os.getenv("HF_MODEL") or "meta-llama/Llama-3.3-70B-Instruct"
     # Secret used to sign verification reports (set a long random value in production)
     REPORT_SECRET: str = os.getenv("REPORT_SECRET", "")
     # Comma-separated. If set, /verify* require an "X-API-Key" header matching one of them.
@@ -35,6 +42,20 @@ class Config:
     QUEUE_WAIT_SECONDS: int = int(os.getenv("QUEUE_WAIT_SECONDS", "30"))
     RATE_LIMIT_PER_MINUTE: int = int(os.getenv("RATE_LIMIT_PER_MINUTE", "10"))
     
+    # OCR ensemble: engines run in parallel and vote. Available: tesseract, paddle, easyocr,
+    # mistral (cloud, sends the image to Mistral). The PDF text layer is always used for PDFs.
+    OCR_ENGINES: list = [e.strip().lower() for e in
+                         (os.getenv("OCR_ENGINES") or "tesseract,paddle,easyocr").split(",") if e.strip()]
+    OCR_ENGINE_TIMEOUT: int = int(os.getenv("OCR_ENGINE_TIMEOUT", "60"))
+    OCR_WARMUP: bool = os.getenv("OCR_WARMUP", "true").lower() == "true"
+    MISTRAL_OCR_MODEL: str = os.getenv("MISTRAL_OCR_MODEL") or "mistral-ocr-latest"
+
+    # Supabase: sign-in (Google OAuth) and per-user report history.
+    # The service-role key stays on the server; it is what lets the backend write reports.
+    SUPABASE_URL: str = (os.getenv("SUPABASE_URL") or "").rstrip("/")
+    SUPABASE_PUBLISHABLE_KEY: str = os.getenv("SUPABASE_PUBLISHABLE_KEY", "")
+    SUPABASE_SERVICE_ROLE_KEY: str = os.getenv("SUPABASE_SERVICE_ROLE_KEY", "")
+
     # LLM Configuration
     LLM_ENABLED: bool = os.getenv("LLM_ENABLED", "true").lower() == "true"
     LLM_MODEL: str = os.getenv("LLM_MODEL", "mistral")
@@ -52,6 +73,12 @@ class Config:
     # Logging
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
     
+    @classmethod
+    def extraction_api_key(cls) -> str:
+        """API key for the selected EXTRACTION_PROVIDER ('' if not configured)."""
+        return {"groq": cls.GROQ_API_KEY, "huggingface": cls.HF_TOKEN,
+                "mistral": cls.MISTRAL_API_KEY}.get(cls.EXTRACTION_PROVIDER, "")
+
     @classmethod
     def get_llm_config(cls) -> dict:
         return {

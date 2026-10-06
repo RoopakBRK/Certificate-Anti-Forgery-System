@@ -8,6 +8,7 @@ import VerifiedCertificate from '@/components/verification/VerifiedCertificate';
 import ManualVerificationForm from '@/components/verification/ManualVerificationForm';
 import CertificateNotFound from '@/components/verification/CertificateNotFound';
 import FlaggedCertificate from '@/components/verification/FlaggedCertificate';
+import OcrSummary from '@/components/verification/OcrSummary';
 import { Loader2, ArrowLeft, AlertTriangle } from 'lucide-react';
 import { CertificateAnalysisResponse } from '@/types';
 
@@ -46,12 +47,12 @@ export default function VerifyResultPage() {
 
   if (isLoading) {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
+      <main className="min-h-screen bg-paper">
         <Navbar />
         <div className="flex items-center justify-center min-h-[calc(100vh-4rem)]">
           <div className="text-center">
-            <Loader2 className="w-12 h-12 text-blue-600 animate-spin mx-auto mb-4" />
-            <p className="text-slate-600">Loading verification results...</p>
+            <Loader2 className="w-10 h-10 text-navy-900 animate-spin mx-auto mb-4" />
+            <p className="text-navy-600">Loading verification results...</p>
           </div>
         </div>
       </main>
@@ -60,21 +61,21 @@ export default function VerifyResultPage() {
 
   if (!result) {
     return (
-      <main className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
+      <main className="min-h-screen bg-paper">
         <Navbar />
         <div className="flex items-center justify-center min-h-[calc(100vh-4rem)] px-4">
           <div className="text-center max-w-md">
-            <AlertTriangle className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
-            <h1 className="text-2xl font-bold text-slate-900 mb-2">No Results Found</h1>
-            <p className="text-slate-600 mb-6">
+            <AlertTriangle className="w-14 h-14 text-warn-600 mx-auto mb-4" />
+            <h1 className="font-display text-3xl font-semibold text-navy-900 mb-2">No Results Found</h1>
+            <p className="text-navy-600 mb-6">
               No verification data available. Please upload a certificate first.
             </p>
             <Link 
               href="/" 
-              className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-6 rounded-lg transition-all shadow-md"
+              className="btn-primary"
             >
               <ArrowLeft className="w-4 h-4" />
-              Back to Upload
+              Back to upload
             </Link>
           </div>
         </div>
@@ -83,27 +84,27 @@ export default function VerifyResultPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
+    <main className="min-h-screen bg-paper">
       <Navbar />
       
-      <div className="max-w-7xl mx-auto px-4 pt-24 pb-8 md:pt-32 md:pb-12">
+      <div className="max-w-3xl mx-auto px-4 pt-24 pb-16 md:pt-32">
         
         {/* Back Button */}
         <Link 
           href="/"
-          className="inline-flex items-center gap-2 text-slate-600 hover:text-blue-600 font-medium mb-8 transition-colors"
+          className="inline-flex items-center gap-2 text-navy-600 hover:text-navy-900 text-sm font-medium mb-8 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          Back to Upload
+          Back to upload
         </Link>
 
         {/* Results Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-2">
-            Verification Results
+        <div className="mb-8">
+          <h1 className="font-display text-4xl font-semibold tracking-tight text-navy-900 mb-2">
+            Verification result
           </h1>
-          <p className="text-slate-600">
-            Certificate: <span className="font-semibold">{result.filename}</span>
+          <p className="text-navy-600">
+            File: <span className="font-medium text-navy-900">{result.filename}</span>
           </p>
         </div>
 
@@ -120,6 +121,8 @@ export default function VerifyResultPage() {
             onRetry={() => setShowManualForm(true)}
           />
         )}
+
+        {!showManualForm && <OcrSummary ocr={result.extraction.ocr} />}
       </div>
     </main>
   );

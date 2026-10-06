@@ -18,6 +18,7 @@ from PIL import Image
 from app.config import config
 from app.security import require_access
 from app.reports import issue_report, read_report
+from app.supabase_client import optional_user, save_report, auth_configured, storage_configured
 
 # Import Schemas
 from app.schemas import (
@@ -29,6 +30,7 @@ from app.schemas import (
 
 # Import Agents
 from app.agents.forensics.forensics import ForensicsAgent
+from app.agents.forensics.pdf_structure import analyze_pdf
 from app.agents.ext import ExtractionAgent
 from app.agents.verification.service import get_verification_service
 from app.agents.verification.scanner import close_browser
@@ -41,7 +43,13 @@ MAX_IMAGE_PIXELS = 50_000_000  # decompression-bomb guard
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    warmup = None
+    if extraction_agent is not None and config.OCR_WARMUP:
+        # Load the OCR models in the background so the first verification is not slow
+        warmup = asyncio.create_task(extraction_agent.ensemble.warmup())
     yield
+    if warmup and not warmup.done():
+        warmup.cancel()
     await close_browser()
 
 
@@ -59,11 +67,16 @@ app.add_middleware(
 # Initialize Agents
 forensics_agent = ForensicsAgent(use_trufor=True)
 
-if config.MISTRAL_API_KEY:
-    extraction_agent: Optional[ExtractionAgent] = ExtractionAgent(api_key=config.MISTRAL_API_KEY)
-else:
+# The LLM only structures the OCR text; without a key, extraction falls back to OCR heuristics
+if not config.extraction_api_key():
+    logger.warning(f"No API key for EXTRACTION_PROVIDER={config.EXTRACTION_PROVIDER!r}: "
+                   "extraction will use OCR heuristics only.")
+try:
+    extraction_agent: Optional[ExtractionAgent] = ExtractionAgent(api_key=config.extraction_api_key())
+    _ = extraction_agent.ensemble   # fail fast here if no OCR engine is installed
+except RuntimeError as e:
     extraction_agent = None
-    logger.error("MISTRAL_API_KEY is not set: /verify will return 503 until it is configured.")
+    logger.error(f"{e} /verify will return 503 until an OCR engine is available.")
 
 verification_service = get_verification_service()
 
@@ -126,7 +139,45 @@ def _to_forensics_result(data: dict) -> ForensicsResult:
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "extraction_configured": extraction_agent is not None}
+    return {
+        "status": "ok",
+        "extraction_configured": extraction_agent is not None,
+        "ocr_engines": extraction_agent.ensemble.engine_names if extraction_agent else [],
+        "llm_configured": bool(extraction_agent and extraction_agent.llm_available),
+        "auth_configured": auth_configured(),
+        "history_configured": storage_configured(),
+    }
+
+
+def _report_row(user: dict, response: "CertificateAnalysisResponse", mode: str) -> dict:
+    ext, ver, fx = response.extraction, response.verification, response.forensics
+    ocr = ext.ocr
+    return {
+        "user_id": user["id"],
+        "mode": mode,
+        "filename": response.filename[:255],
+        "final_verdict": response.final_verdict,
+        "candidate_name": ext.candidate_name,
+        "certificate_id": ext.certificate_id,
+        "issuer_name": ext.issuer_name.value if ext.issuer_name else ext.issuer_org,
+        "issuer_url": ext.issuer_url,
+        "verification_url": ver.verification_url,
+        "verification_method": ver.method,
+        "verification_message": ver.message,
+        "name_match_score": ver.confidence_score,
+        "is_verified": ver.is_verified,
+        "forensics_status": fx.status,
+        "manipulation_score": fx.manipulation_score,
+        "is_high_risk": fx.is_high_risk,
+        "ocr_engines": [e.model_dump() for e in ocr.engines] if ocr else None,
+        "ocr_consensus": {
+            "certificate_id": ocr.certificate_id.model_dump(),
+            "candidate_name": ocr.candidate_name.model_dump(),
+            "warnings": ocr.warnings,
+            "mode": ocr.mode,
+        } if ocr else None,
+        "report_token": response.report_token,
+    }
 
 
 @app.get("/report")
@@ -139,11 +190,11 @@ async def get_report(token: str = Query(..., max_length=4096)):
 
 
 @app.post("/verify", response_model=CertificateAnalysisResponse, dependencies=[Depends(require_access)])
-async def verify_certificate(file: UploadFile = File(...)):
+async def verify_certificate(file: UploadFile = File(...), user: Optional[dict] = Depends(optional_user)):
     """
     Orchestrates the workflow:
-    1. Forensics (ELA/Photoshop Detection)
-    2. Extraction (OCR)
+    1. Forensics (ELA / TruFor / PDF structure)  } run concurrently
+    2. Extraction (parallel multi-engine OCR)    }
     3. Verification (URL & Domain Check via Playwright/Httpx)
     """
     if extraction_agent is None:
@@ -153,7 +204,9 @@ async def verify_certificate(file: UploadFile = File(...)):
     file_bytes = await _read_limited(file)
     kind = _detect_kind(file_bytes)
 
+    pdf_bytes: Optional[bytes] = None
     if kind == "pdf":
+        pdf_bytes = file_bytes
         try:
             image_bytes = await run_in_threadpool(_pdf_first_page_to_png, file_bytes)
         except Exception as e:
@@ -176,13 +229,24 @@ async def verify_certificate(file: UploadFile = File(...)):
         raise HTTPException(status_code=503, detail="Server is busy. Please retry shortly.")
 
     try:
-        # --- STAGE 1: FORENSICS ---
-        forensics_raw = await run_in_threadpool(forensics_agent.analyze, image_bytes)
+        # --- STAGES 1 + 2: FORENSICS and EXTRACTION, concurrently ---
+        forensics_raw, extraction_data = await asyncio.gather(
+            run_in_threadpool(forensics_agent.analyze, image_bytes),
+            extraction_agent.extract(image_bytes, pdf_bytes=pdf_bytes),
+        )
         forensics_data = _to_forensics_result(forensics_raw)
-
-        # --- STAGE 2: EXTRACTION ---
-        extraction_data = await extraction_agent.extract(image_bytes)
         extraction_result = ExtractionResult(**extraction_data)
+
+        # PDF structure: text typed over an image-only certificate is a PDF-editor forgery
+        if pdf_bytes is not None:
+            ocr = extraction_result.ocr
+            visible_words = ocr.visible_words if ocr else len((extraction_result.raw_text_snippet or "").split())
+            pdf_check = await run_in_threadpool(analyze_pdf, pdf_bytes, visible_words)
+            forensics_data.details = list(forensics_data.details or []) + pdf_check["details"] + pdf_check["notes"]
+            if pdf_check["suspicious"]:
+                forensics_data.is_high_risk = True
+                forensics_data.manipulation_score = max(forensics_data.manipulation_score, 0.95)
+                forensics_data.status = "High Risk - PDF text was edited over the certificate"
 
         # --- STAGE 3: VERIFICATION ---
         verification_result = await verification_service.verify(extraction_result)
@@ -211,7 +275,7 @@ async def verify_certificate(file: UploadFile = File(...)):
                 "forensics_status": forensics_data.status,
             })
 
-        return CertificateAnalysisResponse(
+        response = CertificateAnalysisResponse(
             filename=file.filename or "upload",
             final_verdict=final_verdict,
             forensics=forensics_data,
@@ -219,6 +283,9 @@ async def verify_certificate(file: UploadFile = File(...)):
             verification=verification_result,
             report_token=report_token
         )
+        if user:
+            response.report_id = await save_report(_report_row(user, response, "upload"))
+        return response
 
     except HTTPException:
         raise
@@ -236,7 +303,7 @@ async def verify_certificate(file: UploadFile = File(...)):
 
 
 @app.post("/verify/manual", response_model=CertificateAnalysisResponse, dependencies=[Depends(require_access)])
-async def manual_verification(request: ManualVerificationRequest):
+async def manual_verification(request: ManualVerificationRequest, user: Optional[dict] = Depends(optional_user)):
     """
     Handle manual verification with User provided ID and URL.
     The URL must belong to a trusted issuer domain; forensics are not run, so the
@@ -250,7 +317,7 @@ async def manual_verification(request: ManualVerificationRequest):
             request.issuer_url
         )
 
-        return CertificateAnalysisResponse(
+        response = CertificateAnalysisResponse(
             filename="Manual Verification",
             final_verdict="VERIFIED" if verification_result.is_verified else "UNVERIFIED",
             forensics=ForensicsResult(
@@ -278,6 +345,9 @@ async def manual_verification(request: ManualVerificationRequest):
                 }) if verification_result.is_verified else None
             )
         )
+        if user:
+            response.report_id = await save_report(_report_row(user, response, "manual"))
+        return response
 
     except HTTPException:
         raise
