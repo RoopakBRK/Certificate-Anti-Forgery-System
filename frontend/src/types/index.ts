@@ -14,8 +14,8 @@ export interface ForensicsResult {
 
 export interface OCRFieldAgreement {
     value?: string | null;
-    source: string;          // llm | llm+consensus | consensus | heuristic
-    votes: number;           // OCR sources that read this value
+    source: string;          // llm | vlm | llm+consensus | vlm+consensus | consensus | heuristic
+    votes: number;           // sources (OCR engines, QR, vision model) that read this value
     engines: string[];
     agreement: number;       // votes / sources
 }
@@ -31,7 +31,7 @@ export interface OCREngineStatus {
 
 /** How the parallel OCR engines agreed on the extracted fields */
 export interface OCRReport {
-    mode: 'llm' | 'heuristic';
+    mode: 'vlm' | 'vlm+llm' | 'llm' | 'heuristic';
     engines: OCREngineStatus[];
     engines_used: string[];
     sources: number;

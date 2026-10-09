@@ -7,6 +7,7 @@ const ENGINE_LABEL: Record<string, string> = {
   paddle: 'PaddleOCR',
   easyocr: 'EasyOCR',
   mistral: 'Mistral OCR',
+  vlm: 'Vision model',
   pdf_text: 'PDF text layer',
   qr: 'QR code',
 };
@@ -30,7 +31,9 @@ function Agreement({ label, field, sources }: { label: string; field: OCRFieldAg
 /** How the parallel OCR engines agreed on the fields used for verification. */
 export default function OcrSummary({ ocr }: { ocr?: OCRReport | null }) {
   if (!ocr) return null;
-  const ran = ocr.engines.filter((e) => e.name !== 'pdf_text' || e.ok);
+  // The PDF text layer and the vision model are optional extras: only shown when they contributed
+  const ran = ocr.engines.filter((e) => (e.name !== 'pdf_text' && e.name !== 'vlm') || e.ok);
+  const vision = ran.some((e) => e.name === 'vlm');
 
   return (
     <section aria-label="OCR cross-check" className="card mt-6 p-6">
@@ -39,7 +42,8 @@ export default function OcrSummary({ ocr }: { ocr?: OCRReport | null }) {
         <h3 className="font-display text-lg font-semibold text-navy-900">OCR cross-check</h3>
       </div>
       <p className="mt-1 text-sm text-navy-600">
-        {ran.length} OCR engines read the document in parallel; fields are accepted when independent engines agree.
+        {ran.length - (vision ? 1 : 0)} OCR engines read the document in parallel{vision && ', alongside a vision model'};
+        fields are accepted when independent engines agree.
         {ocr.mode === 'heuristic' && ' (AI structuring was unavailable, so fields were taken from the OCR layout.)'}
       </p>
 

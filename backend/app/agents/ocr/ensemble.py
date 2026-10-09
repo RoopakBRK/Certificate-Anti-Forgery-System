@@ -29,6 +29,8 @@ class EnsembleResult:
     results: List[EngineResult]
     consensus: Consensus
     qr_codes: List[str] = field(default_factory=list)
+    # The vision model's reading (a VLMReading). Started with the engines, possibly still running.
+    vlm_task: Optional[asyncio.Task] = None
 
     @property
     def ok_results(self) -> List[EngineResult]:
@@ -73,8 +75,9 @@ def decode_qr_codes(img: Image.Image) -> List[str]:
 
 
 class OCREnsemble:
-    def __init__(self, engine_names: Optional[List[str]] = None):
+    def __init__(self, engine_names: Optional[List[str]] = None, vlm=None):
         names = engine_names or config.OCR_ENGINES
+        self.vlm = vlm   # optional VLMReader; it reads beside the engines and is not waited for
         self.engines: List[OCREngine] = []
         for name in names:
             cls = ENGINE_CLASSES.get(name)
@@ -125,6 +128,8 @@ class OCREnsemble:
 
     async def run(self, image_bytes: bytes, pdf_bytes: Optional[bytes] = None) -> EnsembleResult:
         img = await asyncio.to_thread(prepare_image, image_bytes)
+        # The vision model gets the whole OCR run as a head start; only the engines are awaited
+        vlm_task = asyncio.create_task(self.vlm.read(img)) if self.vlm else None
         engines = [e for e in self.engines if not e.needs_pdf or pdf_bytes]
         results, qr_codes = await asyncio.gather(
             asyncio.gather(*(self._run_engine(e, img, pdf_bytes) for e in engines)),
@@ -138,4 +143,5 @@ class OCREnsemble:
         if qr_codes:
             texts["qr"] = "\n".join(qr_codes)
         consensus = Consensus(texts, self._id_patterns, self._distinctive)
-        return EnsembleResult(image=img, results=list(results), consensus=consensus, qr_codes=qr_codes)
+        return EnsembleResult(image=img, results=list(results), consensus=consensus, qr_codes=qr_codes,
+                              vlm_task=vlm_task)

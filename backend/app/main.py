@@ -144,6 +144,7 @@ async def health():
         "extraction_configured": extraction_agent is not None,
         "ocr_engines": extraction_agent.ensemble.engine_names if extraction_agent else [],
         "llm_configured": bool(extraction_agent and extraction_agent.llm_available),
+        "vlm_configured": bool(extraction_agent and extraction_agent.vlm_available),
         "auth_configured": auth_configured(),
         "history_configured": storage_configured(),
     }

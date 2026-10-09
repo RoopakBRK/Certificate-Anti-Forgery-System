@@ -50,6 +50,13 @@ class Config:
     OCR_WARMUP: bool = os.getenv("OCR_WARMUP", "true").lower() == "true"
     MISTRAL_OCR_MODEL: str = os.getenv("MISTRAL_OCR_MODEL") or "mistral-ocr-latest"
 
+    # Vision model: reads the page image itself while the OCR engines run. Off when empty
+    # (opt-in, the image is sent to the provider): mistral | groq | huggingface.
+    # It is never waited for, so it cannot slow a verification down (see agents/ext.py).
+    VLM_PROVIDER: str = (os.getenv("VLM_PROVIDER") or "").lower()
+    VLM_MODEL: str = os.getenv("VLM_MODEL") or ""   # default: ministral-8b-latest (mistral), qwen/qwen3.8-27b (groq)
+    VLM_TIMEOUT: int = int(os.getenv("VLM_TIMEOUT", "20"))
+
     # Supabase: sign-in (Google OAuth) and per-user report history.
     # The service-role key stays on the server; it is what lets the backend write reports.
     SUPABASE_URL: str = (os.getenv("SUPABASE_URL") or "").rstrip("/")
@@ -74,10 +81,15 @@ class Config:
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
     
     @classmethod
+    def provider_api_key(cls, provider: str) -> str:
+        """API key for an LLM provider ('' if not configured)."""
+        return {"groq": cls.GROQ_API_KEY, "huggingface": cls.HF_TOKEN,
+                "mistral": cls.MISTRAL_API_KEY}.get(provider, "")
+
+    @classmethod
     def extraction_api_key(cls) -> str:
         """API key for the selected EXTRACTION_PROVIDER ('' if not configured)."""
-        return {"groq": cls.GROQ_API_KEY, "huggingface": cls.HF_TOKEN,
-                "mistral": cls.MISTRAL_API_KEY}.get(cls.EXTRACTION_PROVIDER, "")
+        return cls.provider_api_key(cls.EXTRACTION_PROVIDER)
 
     @classmethod
     def get_llm_config(cls) -> dict:

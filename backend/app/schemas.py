@@ -48,8 +48,8 @@ class ForensicsResult(BaseModel):
 
 class OCRFieldAgreement(BaseModel):
     value: Optional[str] = None
-    source: str = "none"          # llm | llm+consensus | consensus | heuristic
-    votes: int = 0                # OCR sources that read this value
+    source: str = "none"          # llm | vlm | llm+consensus | vlm+consensus | consensus | heuristic
+    votes: int = 0                # sources (OCR engines, QR, vision model) that read this value
     engines: List[str] = []
     agreement: float = 0.0        # votes / sources
 
@@ -64,10 +64,10 @@ class OCREngineStatus(BaseModel):
 
 
 class OCRReport(BaseModel):
-    mode: str                     # "llm" or "heuristic" (LLM unavailable)
-    engines: List[OCREngineStatus] = []
+    mode: str                     # who structured the fields: "vlm", "vlm+llm", "llm" or "heuristic"
+    engines: List[OCREngineStatus] = []   # includes the vision model ("vlm") when it is switched on
     engines_used: List[str] = []
-    sources: int = 0              # engines (+ QR) that produced text
+    sources: int = 0              # engines (+ QR, + the vision model) that produced a reading
     visible_words: int = 0        # words read from the rendered page by the best engine
     qr_codes: List[str] = []
     certificate_id: OCRFieldAgreement = OCRFieldAgreement()
